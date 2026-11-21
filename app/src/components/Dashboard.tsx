@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   Activity,
@@ -6,6 +6,8 @@ import {
   ArrowDownUp,
   ArrowUp,
   BarChart3,
+  Check,
+  Copy,
   KeyRound,
   Plus,
   Server as ServerIcon,
@@ -14,8 +16,9 @@ import {
   Terminal as TerminalIcon,
   Zap,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, copyToClipboard } from "@/lib/utils";
 import { ProviderIcon } from "./ProviderIcon";
+import { ServerCopyActions } from "./ServerCopyActions";
 import {
   ServerStatusBlock,
   type Availability,
@@ -67,6 +70,29 @@ export function Dashboard({
     Record<string, { history: Availability[]; lastIncidentAt?: number }>
   >({});
   const [incidents, setIncidents] = useState<AvailabilityIncident[]>([]);
+  const [copiedEndpointId, setCopiedEndpointId] = useState<string | null>(null);
+  const endpointCopyTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (endpointCopyTimerRef.current !== null) {
+        window.clearTimeout(endpointCopyTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleCopyEndpoint = async (srv: Server) => {
+    const ok = await copyToClipboard(`${srv.username}@${srv.host}:${srv.port}`);
+    if (!ok) return;
+    setCopiedEndpointId(srv.id);
+    if (endpointCopyTimerRef.current !== null) {
+      window.clearTimeout(endpointCopyTimerRef.current);
+    }
+    endpointCopyTimerRef.current = window.setTimeout(() => {
+      setCopiedEndpointId(null);
+      endpointCopyTimerRef.current = null;
+    }, 1600);
+  };
 
   const recordSample = (srv: Server, status: Availability, desc: string) => {
     const now = Date.now();
@@ -825,9 +851,24 @@ export function Dashboard({
                             {srv.name}
                           </span>
                         </div>
-                        <div className="mt-0.5 truncate font-mono text-[12px] text-muted-foreground">
-                          {srv.username}@{srv.host}:{srv.port}
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => void handleCopyEndpoint(srv)}
+                          title="点击复制连接地址"
+                          className="group/addr mt-0.5 inline-flex max-w-full items-center gap-1.5 rounded-[6px] px-1 -mx-1 py-0.5 font-mono text-[12px] text-muted-foreground transition hover:bg-muted hover:text-foreground"
+                        >
+                          <span className="truncate">
+                            {srv.username}@{srv.host}:{srv.port}
+                          </span>
+                          {copiedEndpointId === srv.id ? (
+                            <span className="inline-flex shrink-0 items-center gap-0.5 text-[11px] font-sans font-medium text-emerald-500">
+                              <Check className="h-3 w-3" />
+                              已复制
+                            </span>
+                          ) : (
+                            <Copy className="h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover/addr:opacity-100" />
+                          )}
+                        </button>
                       </div>
                       {latency != null && (
                         <span
@@ -919,7 +960,8 @@ export function Dashboard({
                     )}
                   </div>
 
-                  <div className="mt-4 flex justify-end">
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <ServerCopyActions server={srv} />
                     <button
                       type="button"
                       onClick={() => onOpenTerminal(srv)}

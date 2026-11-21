@@ -142,7 +142,7 @@ export function ServerStatusBlock({
               <span className="text-[17px] font-semibold text-card-foreground">
                 批量可用性
               </span>
-              <span className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-[13px] font-medium text-foreground">
+              <span className="rounded-full bg-muted px-2.5 py-0.5 text-[13px] font-medium tabular-nums text-foreground">
                 可用率 {totalRate}
               </span>
             </div>
@@ -190,11 +190,11 @@ export function ServerStatusBlock({
                 <span className="text-[13px] text-muted-foreground">
                   {STATUS_LABEL[row.current]}
                 </span>
-                <span className="font-mono text-[13px] text-muted-foreground">
+                <span className="text-[13px] tabular-nums text-muted-foreground">
                   {calcAvailability(row.history)}
                 </span>
                 {row.lastIncidentAt && (
-                  <span className="ml-auto font-mono text-[13px] text-muted-foreground">
+                  <span className="ml-auto text-[13px] tabular-nums text-muted-foreground">
                     最近故障: {formatTime(row.lastIncidentAt)}
                   </span>
                 )}

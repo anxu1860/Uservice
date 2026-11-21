@@ -26,7 +26,7 @@ const T = {
 };
 type Theme = typeof T;
 
-const FONT = "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', Inter, 'Segoe UI', Roboto, sans-serif";
+const FONT = "var(--font-sans)";
 const EASE = "cubic-bezier(.2,.9,.25,1)";
 const SPRING = "cubic-bezier(.34,1.56,.64,1)";
 const SHEET = "cubic-bezier(.32,.72,0,1)";

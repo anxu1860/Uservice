@@ -291,7 +291,7 @@ export function App() {
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
                           {typeof ping === "number" ? (
-                            <span className="inline-flex items-center gap-1 font-mono text-[10px] opacity-70">
+                            <span className="inline-flex items-center gap-1 text-[11px] tabular-nums opacity-70">
                               <span
                                 className={`h-1.5 w-1.5 rounded-full ${
                                   ping < 100

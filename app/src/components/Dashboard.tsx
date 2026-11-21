@@ -520,7 +520,7 @@ export function Dashboard({
                         {srv.name}
                       </span>
                     </div>
-                    <span className="mt-1 font-mono text-[12px] text-muted-foreground">
+                    <span className="mt-1 text-[12px] tabular-nums text-muted-foreground">
                       {subText}
                     </span>
                   </button>
@@ -539,7 +539,7 @@ export function Dashboard({
                         : `${selectedServer.username}@${selectedServer.host}:${selectedServer.port}`}
                     </p>
                     <div className="mt-1 flex items-baseline gap-2">
-                      <span className="font-mono text-4xl font-bold tabular-nums text-card-foreground">
+                      <span className="text-4xl font-bold tracking-tight tabular-nums text-card-foreground">
                         {selectedStats?.cpuPercent !== null &&
                         selectedStats?.cpuPercent !== undefined
                           ? `${selectedStats.cpuPercent.toFixed(1)}%`
@@ -575,7 +575,7 @@ export function Dashboard({
                       <div>
                         <div className="mb-1 flex justify-between text-[12px]">
                           <span className="text-muted-foreground">内存</span>
-                          <span className="font-mono tabular-nums text-card-foreground">
+                          <span className="tabular-nums text-card-foreground">
                             {formatBytes(selectedStats.memUsed)} /{" "}
                             {formatBytes(selectedStats.memTotal)}
                           </span>
@@ -593,7 +593,7 @@ export function Dashboard({
                       <div>
                         <div className="mb-1 flex justify-between text-[12px]">
                           <span className="text-muted-foreground">磁盘 (/)</span>
-                          <span className="font-mono tabular-nums text-card-foreground">
+                          <span className="tabular-nums text-card-foreground">
                             {formatBytes(selectedStats.diskUsed)} /{" "}
                             {formatBytes(selectedStats.diskTotal)}
                           </span>
@@ -658,10 +658,10 @@ export function Dashboard({
                       {m.label}
                     </p>
                     <div className="mt-0.5 flex items-baseline justify-between">
-                      <span className="font-mono text-[15px] font-bold tabular-nums text-card-foreground">
+                      <span className="text-[15px] font-bold tabular-nums text-card-foreground">
                         {m.value}
                       </span>
-                      <span className="font-mono text-[11px] font-semibold text-muted-foreground">
+                      <span className="text-[11px] font-semibold tabular-nums text-muted-foreground">
                         {m.badge}
                       </span>
                     </div>
@@ -704,7 +704,7 @@ export function Dashboard({
                           <span className="truncate font-medium text-card-foreground">
                             {server.name}
                           </span>
-                          <span className="shrink-0 font-mono text-[12px] tabular-nums text-muted-foreground">
+                          <span className="shrink-0 text-[12px] tabular-nums text-muted-foreground">
                             {Math.round(latencyMs)} ms
                           </span>
                         </div>
@@ -787,7 +787,7 @@ export function Dashboard({
                 <p className="text-[13px] text-muted-foreground">
                   {stat.label}
                 </p>
-                <p className="mt-1 font-mono text-xl font-bold tabular-nums text-card-foreground">
+                <p className="mt-1 text-xl font-bold tracking-tight tabular-nums text-card-foreground">
                   {stat.value}
                 </p>
               </div>
@@ -840,13 +840,13 @@ export function Dashboard({
                     <div className="mb-3 flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <ProviderIcon server={srv} />
                           <span
                             className={cn(
                               "h-2 w-2 shrink-0 rounded-full",
                               statusDot
                             )}
                           />
+                          <ProviderIcon server={srv} />
                           <span className="truncate text-[15px] font-semibold text-card-foreground">
                             {srv.name}
                           </span>
@@ -873,7 +873,7 @@ export function Dashboard({
                       {latency != null && (
                         <span
                           className={cn(
-                            "shrink-0 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-medium tabular-nums",
+                            "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium tabular-nums",
                             latencyClass
                           )}
                         >
@@ -908,7 +908,7 @@ export function Dashboard({
                           </span>
                           <div className="flex items-center gap-2">
                             <Sparkline values={state.cpuHistory} />
-                            <span className="w-12 text-right font-mono font-medium tabular-nums text-card-foreground">
+                            <span className="w-12 text-right font-medium tabular-nums text-card-foreground">
                               {stats.cpuPercent !== null
                                 ? `${stats.cpuPercent.toFixed(1)}%`
                                 : "—"}
@@ -919,7 +919,7 @@ export function Dashboard({
 
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">内存</span>
-                          <span className="font-mono text-[12px] tabular-nums text-card-foreground">
+                          <span className="text-[12px] tabular-nums text-card-foreground">
                             {formatBytes(stats.memUsed)} /{" "}
                             {formatBytes(stats.memTotal)} ({memPct.toFixed(0)}%)
                           </span>
@@ -928,7 +928,7 @@ export function Dashboard({
 
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">磁盘 (/)</span>
-                          <span className="font-mono text-[12px] tabular-nums text-card-foreground">
+                          <span className="text-[12px] tabular-nums text-card-foreground">
                             {formatBytes(stats.diskUsed)} /{" "}
                             {formatBytes(stats.diskTotal)} ({diskPct.toFixed(0)}
                             %)
@@ -941,7 +941,7 @@ export function Dashboard({
                             负载 {stats.load1.toFixed(2)} ·{" "}
                             {formatUptime(stats.uptimeSecs)}
                           </span>
-                          <span className="inline-flex items-center gap-2 font-mono tabular-nums">
+                          <span className="inline-flex items-center gap-2 tabular-nums">
                             <span className="inline-flex items-center gap-0.5">
                               <ArrowDown className="h-3 w-3 text-emerald-500" />
                               {formatRate(stats.netRxRate)}

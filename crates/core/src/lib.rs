@@ -27,6 +27,8 @@ pub struct Server {
     #[serde(default)]
     pub group: Option<String>,
     #[serde(default)]
+    pub provider: Option<String>,
+    #[serde(default)]
     pub tags: Vec<String>,
     pub updated_at: i64,
 }
@@ -47,6 +49,7 @@ mod tests {
                 path: "~/.ssh/id_ed25519".to_string(),
             },
             group: Some("Production".to_string()),
+            provider: Some("tencent".to_string()),
             tags: vec!["linux".to_string(), "nginx".to_string()],
             updated_at: 1_700_000_000,
         };
@@ -63,6 +66,7 @@ mod tests {
             username: "root".to_string(),
             auth: AuthMethod::Password,
             group: None,
+            provider: None,
             tags: vec![],
             updated_at: 1_700_000_001,
         };

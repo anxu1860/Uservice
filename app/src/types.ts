@@ -10,6 +10,7 @@ export interface Server {
   username: string;
   auth: AuthMethod;
   group?: string;
+  provider?: string;
   tags: string[];
   updated_at: number;
 }

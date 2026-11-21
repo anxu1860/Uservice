@@ -70,6 +70,7 @@ mod tests {
             username: "root".to_string(),
             auth: AuthMethod::Password,
             group: Some("Prod".to_string()),
+            provider: None,
             tags: vec!["web".to_string()],
             updated_at: 1_700_000_000,
         }];

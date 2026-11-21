@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Eye, EyeOff, Loader2, X } from "lucide-react";
+import { CLOUD_PROVIDERS } from "./ProviderIcon";
 import type { Server } from "../types";
 
 interface ServerFormModalProps {
@@ -23,6 +24,7 @@ export function ServerFormModal({
   const [port, setPort] = useState("22");
   const [username, setUsername] = useState("root");
   const [group, setGroup] = useState("");
+  const [provider, setProvider] = useState("auto");
   const [authType, setAuthType] = useState<"password" | "key">("key");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -38,6 +40,7 @@ export function ServerFormModal({
       setPort(String(initial.port));
       setUsername(initial.username);
       setGroup(initial.group ?? "");
+      setProvider(initial.provider ?? "auto");
       if (initial.auth.type === "password") {
         setAuthType("password");
         setKeyPath("~/.ssh/id_ed25519");
@@ -51,6 +54,7 @@ export function ServerFormModal({
       setPort("22");
       setUsername("root");
       setGroup("");
+      setProvider("auto");
       setAuthType("key");
       setKeyPath("~/.ssh/id_ed25519");
     }
@@ -113,6 +117,7 @@ export function ServerFormModal({
           ? { type: "password" }
           : { type: "key", path: keyPath.trim() || "~/.ssh/id_ed25519" },
       group: group.trim() || undefined,
+      provider: provider === "auto" ? undefined : provider,
       tags: initial?.tags ?? [],
       updated_at: Math.floor(Date.now() / 1000),
     };
@@ -211,6 +216,23 @@ export function ServerFormModal({
                 className="h-11 w-full rounded-[12px] bg-muted px-3.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="mb-1 block text-[13px] text-muted-foreground">
+              云厂商 / 图标
+            </label>
+            <select
+              value={provider}
+              onChange={(e) => setProvider(e.target.value)}
+              className="h-11 w-full rounded-[12px] bg-muted px-3.5 text-[15px] text-foreground outline-none focus:ring-2 focus:ring-primary/40"
+            >
+              {CLOUD_PROVIDERS.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div>

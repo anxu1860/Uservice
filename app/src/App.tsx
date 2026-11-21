@@ -8,7 +8,6 @@ import {
   Pencil,
   Plus,
   Search,
-  Server as ServerIcon,
   ShieldCheck,
   Sun,
   Trash2,
@@ -20,6 +19,7 @@ import { Dashboard } from "./components/Dashboard";
 import { HostKeyModal } from "./components/HostKeyModal";
 import { ImportSshConfigModal } from "./components/ImportSshConfigModal";
 import { PromptSecretModal } from "./components/PromptSecretModal";
+import { ProviderIcon } from "./components/ProviderIcon";
 import { ServerFormModal } from "./components/ServerFormModal";
 import { TerminalView } from "./components/TerminalView";
 import type { CmdError, Server, TabStatus, TerminalTab } from "./types";
@@ -279,7 +279,7 @@ export function App() {
                         className="sidebar-item group flex cursor-pointer items-center justify-between gap-1.5 px-2.5 py-2 transition"
                       >
                         <div className="flex min-w-0 items-center gap-2.5">
-                          <ServerIcon className="h-4 w-4 shrink-0 text-blue-500" />
+                          <ProviderIcon server={server} />
                           <div className="min-w-0">
                             <div className="truncate text-[13px] font-medium">
                               {server.name}

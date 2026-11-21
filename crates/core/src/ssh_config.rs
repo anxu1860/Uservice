@@ -87,6 +87,7 @@ fn flush_block(block: Option<HostBlock>, default_user: &str, now: i64, out: &mut
             username,
             auth: AuthMethod::Key { path: key_path },
             group: Some("SSH Config".to_string()),
+            provider: None,
             tags: Vec::new(),
             updated_at: now,
         });

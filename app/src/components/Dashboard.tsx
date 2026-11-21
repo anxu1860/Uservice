@@ -15,6 +15,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ProviderIcon } from "./ProviderIcon";
 import {
   ServerStatusBlock,
   type Availability,
@@ -491,6 +492,7 @@ export function Dashboard({
                     )}
                   >
                     <div className="flex items-center gap-2">
+                      <ProviderIcon server={srv} className="h-3.5 w-3.5" />
                       <span
                         className={cn("h-2 w-2 shrink-0 rounded-full", dot)}
                       />
@@ -818,6 +820,7 @@ export function Dashboard({
                     <div className="mb-3 flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
+                          <ProviderIcon server={srv} />
                           <span
                             className={cn(
                               "h-2 w-2 shrink-0 rounded-full",

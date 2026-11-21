@@ -426,13 +426,7 @@ export function Dashboard({
     <div className="h-full overflow-y-auto bg-background">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-6">
         {/* Hero Header */}
-        <div className="flex flex-col gap-2">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full bg-card px-3 py-1 text-[13px] shadow-[0_0_0_0.5px_var(--color-border)]">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
-            <span className="font-medium text-muted-foreground">
-              无 Agent · SSH 实时监控
-            </span>
-          </div>
+        <div className="flex flex-col gap-1">
           <h1 className="text-[28px] font-bold tracking-[-0.02em] text-foreground">
             服务器概览
           </h1>

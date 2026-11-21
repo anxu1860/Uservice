@@ -466,6 +466,21 @@ export function App() {
               onNeedPassword={(tabId, server) => {
                 setPendingPassword({ tabId, server });
               }}
+              onReconnect={(tabId) => {
+                setTabs((prev) =>
+                  prev.map((t) =>
+                    t.tabId === tabId
+                      ? {
+                          ...t,
+                          status: "connecting",
+                          errorMessage: undefined,
+                          errorKind: undefined,
+                          connectNonce: t.connectNonce + 1,
+                        }
+                      : t
+                  )
+                );
+              }}
             />
           ))}
         </div>

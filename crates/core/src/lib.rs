@@ -1,5 +1,10 @@
+pub mod ssh_config;
+pub mod store;
+
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+pub use store::{ServerStore, StoreError};
 
 /// Authentication method metadata stored for a server entry.
 /// Secrets (passwords, key passphrases) are never persisted here.

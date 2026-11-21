@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
+  FileInput,
+  Pencil,
   Plus,
   Search,
   Server as ServerIcon,
@@ -9,43 +11,58 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { AddServerModal } from "./components/AddServerModal";
+import { ImportSshConfigModal } from "./components/ImportSshConfigModal";
 import { PromptSecretModal } from "./components/PromptSecretModal";
+import { ServerFormModal } from "./components/ServerFormModal";
 import { TerminalView } from "./components/TerminalView";
 import type { Server, TabStatus, TerminalTab } from "./types";
 
-const STORAGE_KEY = "serverhub.servers.v1";
-
-function loadServers(): Server[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
+const LEGACY_STORAGE_KEY = "serverhub.servers.v1";
 
 export function App() {
-  const [servers, setServers] = useState<Server[]>(loadServers);
+  const [servers, setServers] = useState<Server[]>([]);
   const [search, setSearch] = useState("");
   const [tabs, setTabs] = useState<TerminalTab[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingServer, setEditingServer] = useState<Server | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const [pendingPasswordServer, setPendingPasswordServer] =
     useState<Server | null>(null);
   const [latency, setLatency] = useState<
     Record<string, number | "timeout" | "pending">
   >({});
 
-  useEffect(() => {
+  const refreshServers = useCallback(async () => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(servers));
-    } catch {
-      // Ignore storage quota errors
+      const list = await invoke<Server[]>("servers_list");
+      if (list.length === 0) {
+        const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacyRaw) {
+          try {
+            const parsed = JSON.parse(legacyRaw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              await invoke<number>("servers_import", { servers: parsed });
+              localStorage.removeItem(LEGACY_STORAGE_KEY);
+              const migrated = await invoke<Server[]>("servers_list");
+              setServers(migrated);
+              return;
+            }
+          } catch {
+            // Ignore malformed legacy storage
+          }
+          localStorage.removeItem(LEGACY_STORAGE_KEY);
+        }
+      }
+      setServers(list);
+    } catch (err) {
+      console.error("加载服务器列表失败:", err);
     }
-  }, [servers]);
+  }, []);
+
+  useEffect(() => {
+    void refreshServers();
+  }, [refreshServers]);
 
   useEffect(() => {
     if (servers.length === 0) return;
@@ -169,9 +186,11 @@ export function App() {
     });
   };
 
-  const deleteServer = (id: string) => {
-    setServers((prev) => prev.filter((s) => s.id !== id));
-    invoke("secret_delete", { id }).catch(() => {});
+  const deleteServer = async (srv: Server) => {
+    if (!window.confirm(`确定删除服务器「${srv.name}」吗？`)) return;
+    await invoke("servers_delete", { id: srv.id }).catch(console.error);
+    await invoke("secret_delete", { id: srv.id }).catch(() => {});
+    await refreshServers();
   };
 
   return (
@@ -181,11 +200,23 @@ export function App() {
         {/* Top drag region leaving ~80px for macOS traffic lights */}
         <div
           data-tauri-drag-region
-          className="mac-traffic-pad flex h-[38px] shrink-0 items-center justify-end pr-3 pl-3"
+          className="mac-traffic-pad flex h-[38px] shrink-0 items-center justify-end gap-1 pr-3 pl-3"
         >
           <button
             type="button"
-            onClick={() => setAddOpen(true)}
+            onClick={() => setImportOpen(true)}
+            title="导入 ~/.ssh/config"
+            className="sidebar-item flex items-center gap-1 px-2 py-1 text-xs font-medium opacity-75 transition hover:opacity-100"
+          >
+            <FileInput className="h-3.5 w-3.5" />
+            <span>导入</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setEditingServer(null);
+              setFormOpen(true);
+            }}
             title="添加服务器"
             className="sidebar-item flex items-center gap-1 px-2 py-1 text-xs font-medium opacity-80 transition hover:opacity-100"
           >
@@ -271,7 +302,19 @@ export function App() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              deleteServer(server.id);
+                              setEditingServer(server);
+                              setFormOpen(true);
+                            }}
+                            title="编辑"
+                            className="rounded p-1 opacity-0 transition group-hover:opacity-60 hover:!opacity-100"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void deleteServer(server);
                             }}
                             title="删除"
                             className="rounded p-1 opacity-0 transition group-hover:opacity-60 hover:!opacity-100 hover:text-red-500"
@@ -369,7 +412,10 @@ export function App() {
                 </p>
                 <button
                   type="button"
-                  onClick={() => setAddOpen(true)}
+                  onClick={() => {
+                    setEditingServer(null);
+                    setFormOpen(true);
+                  }}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-600"
                 >
                   <Plus className="h-4 w-4" />
@@ -390,16 +436,29 @@ export function App() {
         </div>
       </main>
 
-      <AddServerModal
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onAdd={async (server, secret) => {
-          setServers((prev) => [server, ...prev]);
+      <ServerFormModal
+        open={formOpen}
+        initial={editingServer}
+        onClose={() => {
+          setFormOpen(false);
+          setEditingServer(null);
+        }}
+        onSave={async (server, secret) => {
+          await invoke("servers_upsert", { server }).catch(console.error);
           if (secret) {
             await invoke("secret_save", { id: server.id, secret }).catch(
               console.error
             );
           }
+          await refreshServers();
+        }}
+      />
+
+      <ImportSshConfigModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => {
+          void refreshServers();
         }}
       />
 

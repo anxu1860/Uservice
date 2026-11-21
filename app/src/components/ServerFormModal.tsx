@@ -1,28 +1,63 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { Eye, EyeOff, Loader2, X } from "lucide-react";
 import type { Server } from "../types";
 
-interface AddServerModalProps {
+interface ServerFormModalProps {
   open: boolean;
+  initial?: Server | null;
   onClose: () => void;
-  onAdd: (server: Server, secret: string) => void;
+  onSave: (server: Server, secret: string) => void;
 }
 
 type TestResult = { ok: true; ms: number } | { ok: false; error: string } | null;
 
-export function AddServerModal({ open, onClose, onAdd }: AddServerModalProps) {
+export function ServerFormModal({
+  open,
+  initial,
+  onClose,
+  onSave,
+}: ServerFormModalProps) {
   const [name, setName] = useState("");
   const [host, setHost] = useState("");
   const [port, setPort] = useState("22");
   const [username, setUsername] = useState("root");
   const [group, setGroup] = useState("");
-  const [authType, setAuthType] = useState<"password" | "key">("password");
+  const [authType, setAuthType] = useState<"password" | "key">("key");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [keyPath, setKeyPath] = useState("~/.ssh/id_ed25519");
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<TestResult>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    if (initial) {
+      setName(initial.name);
+      setHost(initial.host);
+      setPort(String(initial.port));
+      setUsername(initial.username);
+      setGroup(initial.group ?? "");
+      if (initial.auth.type === "password") {
+        setAuthType("password");
+        setKeyPath("~/.ssh/id_ed25519");
+      } else {
+        setAuthType("key");
+        setKeyPath(initial.auth.path);
+      }
+    } else {
+      setName("");
+      setHost("");
+      setPort("22");
+      setUsername("root");
+      setGroup("");
+      setAuthType("key");
+      setKeyPath("~/.ssh/id_ed25519");
+    }
+    setPassword("");
+    setShowPassword(false);
+    setTestResult(null);
+  }, [open, initial]);
 
   if (!open) return null;
 
@@ -53,10 +88,11 @@ export function AddServerModal({ open, onClose, onAdd }: AddServerModalProps) {
       });
       setTestResult({ ok: true, ms });
     } catch (err) {
-      setTestResult({
-        ok: false,
-        error: err instanceof Error ? err.message : String(err),
-      });
+      const msg =
+        typeof err === "object" && err !== null && "message" in err
+          ? String((err as { message: unknown }).message)
+          : String(err);
+      setTestResult({ ok: false, error: msg });
     } finally {
       setTesting(false);
     }
@@ -67,7 +103,7 @@ export function AddServerModal({ open, onClose, onAdd }: AddServerModalProps) {
     if (!host.trim() || !username.trim()) return;
 
     const server: Server = {
-      id: crypto.randomUUID(),
+      id: initial?.id ?? crypto.randomUUID(),
       name: name.trim() || `${username.trim()}@${host.trim()}`,
       host: host.trim(),
       port: effectivePort,
@@ -77,15 +113,11 @@ export function AddServerModal({ open, onClose, onAdd }: AddServerModalProps) {
           ? { type: "password" }
           : { type: "key", path: keyPath.trim() || "~/.ssh/id_ed25519" },
       group: group.trim() || undefined,
-      tags: [],
+      tags: initial?.tags ?? [],
       updated_at: Math.floor(Date.now() / 1000),
     };
 
-    onAdd(server, password);
-    setName("");
-    setHost("");
-    setPort("22");
-    setGroup("");
+    onSave(server, password);
     setPassword("");
     setShowPassword(false);
     setTestResult(null);
@@ -96,7 +128,9 @@ export function AddServerModal({ open, onClose, onAdd }: AddServerModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4">
       <div className="popover w-full max-w-md p-5">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">添加服务器</h2>
+          <h2 className="text-base font-semibold">
+            {initial ? "编辑服务器" : "添加服务器"}
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -217,13 +251,15 @@ export function AddServerModal({ open, onClose, onAdd }: AddServerModalProps) {
 
           {authType === "password" ? (
             <div>
-              <label className="mb-1 block text-xs opacity-70">密码</label>
+              <label className="mb-1 block text-xs opacity-70">
+                密码{initial ? "（留空保持不变）" : "（可选，也可连接时输入）"}
+              </label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="输入 SSH 登录密码（保存后自动连接）"
+                  placeholder="仅在会话内存中缓存，不落盘"
                   className="w-full rounded-lg border bg-transparent py-1.5 pr-9 pl-3 outline-none focus:border-blue-500"
                   style={{ borderColor: "var(--separator)" }}
                 />
@@ -299,7 +335,7 @@ export function AddServerModal({ open, onClose, onAdd }: AddServerModalProps) {
           )}
 
           <p className="text-[11px] opacity-60">
-            密码/私钥口令保存在系统钥匙串（Keychain）中，不会以明文写入磁盘。
+            密码和私钥口令仅在当前会话的内存中使用，不会写入本地磁盘。
           </p>
 
           <div className="flex items-center justify-between gap-2 pt-2">

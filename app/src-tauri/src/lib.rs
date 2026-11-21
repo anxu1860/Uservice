@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
+use serverhub_core::{Server, ServerStore, ssh_config};
 use serverhub_ssh::{Auth, ConnectConfig, KnownHostsStore, ShellEvent, ShellHandle, SshSession};
 use tauri::Manager;
 use tauri::ipc::Channel;
@@ -19,6 +20,7 @@ struct SessionEntry {
 #[derive(Default)]
 struct AppState {
     sessions: Arc<Mutex<HashMap<Uuid, SessionEntry>>>,
+    store_lock: Mutex<()>,
 }
 
 #[derive(Deserialize)]
@@ -249,6 +251,104 @@ async fn ssh_test(app: tauri::AppHandle, cfg: SshConnectInput) -> Result<u64, St
     Ok(elapsed_ms)
 }
 
+fn server_store(app: &tauri::AppHandle) -> Result<ServerStore, String> {
+    let data_dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("无法获取应用数据目录: {e}"))?;
+    Ok(ServerStore::new(data_dir.join("servers.json")))
+}
+
+fn now_unix_secs() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
+#[tauri::command]
+async fn servers_list(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+) -> Result<Vec<Server>, String> {
+    let _guard = state.store_lock.lock().await;
+    server_store(&app)?.load().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn servers_upsert(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+    mut server: Server,
+) -> Result<(), String> {
+    let _guard = state.store_lock.lock().await;
+    let store = server_store(&app)?;
+    let mut list = store.load().map_err(|e| e.to_string())?;
+    server.updated_at = now_unix_secs();
+    if let Some(existing) = list.iter_mut().find(|s| s.id == server.id) {
+        *existing = server;
+    } else {
+        list.insert(0, server);
+    }
+    store.save(&list).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn servers_delete(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+    id: String,
+) -> Result<(), String> {
+    let uuid = Uuid::parse_str(&id).map_err(|e| format!("无效服务器 ID: {e}"))?;
+    let _guard = state.store_lock.lock().await;
+    let store = server_store(&app)?;
+    let mut list = store.load().map_err(|e| e.to_string())?;
+    list.retain(|s| s.id != uuid);
+    store.save(&list).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn ssh_config_preview() -> Result<Vec<Server>, String> {
+    let Ok(home) = std::env::var("HOME") else {
+        return Ok(Vec::new());
+    };
+    let path = std::path::PathBuf::from(home).join(".ssh").join("config");
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let content =
+        std::fs::read_to_string(&path).map_err(|e| format!("读取 ~/.ssh/config 失败: {e}"))?;
+    let default_user = std::env::var("USER").unwrap_or_else(|_| "root".to_string());
+    Ok(ssh_config::parse(&content, &default_user))
+}
+
+#[tauri::command]
+async fn servers_import(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+    servers: Vec<Server>,
+) -> Result<usize, String> {
+    let _guard = state.store_lock.lock().await;
+    let store = server_store(&app)?;
+    let mut list = store.load().map_err(|e| e.to_string())?;
+    let mut added = 0usize;
+    for srv in servers {
+        let duplicate = list.iter().any(|existing| {
+            existing.host == srv.host
+                && existing.port == srv.port
+                && existing.username == srv.username
+        });
+        if !duplicate {
+            list.push(srv);
+            added += 1;
+        }
+    }
+    if added > 0 {
+        store.save(&list).map_err(|e| e.to_string())?;
+    }
+    Ok(added)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -263,7 +363,12 @@ pub fn run() {
             secret_get,
             secret_delete,
             ssh_ping,
-            ssh_test
+            ssh_test,
+            servers_list,
+            servers_upsert,
+            servers_delete,
+            ssh_config_preview,
+            servers_import
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

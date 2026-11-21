@@ -16,6 +16,11 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
+  ServerStatusBlock,
+  type Availability,
+  type AvailabilityIncident,
+} from "./ServerStatusBlock";
+import {
   parseCmdError,
   type Server,
   type ServerStats,
@@ -57,6 +62,67 @@ export function Dashboard({
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedMetric, setSelectedMetric] = useState(0);
+  const [availability, setAvailability] = useState<
+    Record<string, { history: Availability[]; lastIncidentAt?: number }>
+  >({});
+  const [incidents, setIncidents] = useState<AvailabilityIncident[]>([]);
+
+  const recordSample = (srv: Server, status: Availability, desc: string) => {
+    const now = Date.now();
+    setAvailability((prev) => {
+      const entry = prev[srv.id] ?? { history: [] };
+      const prevStatus =
+        entry.history.length > 0
+          ? entry.history[entry.history.length - 1]
+          : undefined;
+      const nextHistory = [...entry.history.slice(-29), status];
+      let nextLastIncidentAt = entry.lastIncidentAt;
+
+      if (prevStatus !== status) {
+        if (status === "degraded" || status === "down") {
+          nextLastIncidentAt = now;
+          setIncidents((incPrev) =>
+            [
+              {
+                id: crypto.randomUUID(),
+                serverId: srv.id,
+                serverName: srv.name,
+                at: now,
+                status,
+                desc,
+              },
+              ...incPrev,
+            ].slice(0, 20)
+          );
+        } else if (
+          status === "up" &&
+          (prevStatus === "degraded" || prevStatus === "down")
+        ) {
+          setIncidents((incPrev) =>
+            [
+              {
+                id: crypto.randomUUID(),
+                serverId: srv.id,
+                serverName: srv.name,
+                at: now,
+                status: "up" as Availability,
+                desc: "已恢复",
+              },
+              ...incPrev,
+            ].slice(0, 20)
+          );
+        }
+      }
+
+      return {
+        ...prev,
+        [srv.id]: {
+          history: nextHistory,
+          lastIncidentAt: nextLastIncidentAt,
+        },
+      };
+    });
+  };
 
   useEffect(() => {
     const onVis = () => setDocVisible(document.visibilityState === "visible");
@@ -104,6 +170,24 @@ export function Dashboard({
           },
         });
         if (cancelled) return;
+        const reasons: string[] = [];
+        if (stats.latencyMs !== null && stats.latencyMs > 200) {
+          reasons.push(`延迟过高 ${Math.round(stats.latencyMs)}ms`);
+        }
+        if (stats.cpuPercent !== null && stats.cpuPercent > 90) {
+          reasons.push("CPU 过高");
+        }
+        if (stats.memTotal > 0 && stats.memUsed / stats.memTotal > 0.9) {
+          reasons.push("内存不足");
+        }
+        if (stats.diskTotal > 0 && stats.diskUsed / stats.diskTotal > 0.9) {
+          reasons.push("磁盘将满");
+        }
+        if (reasons.length > 0) {
+          recordSample(srv, "degraded", reasons.join("、"));
+        } else {
+          recordSample(srv, "up", "");
+        }
         setCards((prev) => {
           const hist = prev[srv.id]?.cpuHistory ?? [];
           const nextHist =
@@ -127,6 +211,7 @@ export function Dashboard({
         if (cancelled) return;
         const err = parseCmdError(rawErr);
         if (err.kind === "auth" && srv.auth.type === "password") {
+          recordSample(srv, "unknown", "");
           setCards((prev) => ({
             ...prev,
             [srv.id]: {
@@ -137,6 +222,7 @@ export function Dashboard({
           return;
         }
         if (err.kind === "host_key_unknown" && err.fingerprint) {
+          recordSample(srv, "unknown", "");
           setCards((prev) => ({
             ...prev,
             [srv.id]: {
@@ -148,6 +234,7 @@ export function Dashboard({
           onHostKeyUnknown(hostPort, err.fingerprint);
           return;
         }
+        recordSample(srv, "down", err.message);
         setCards((prev) => ({
           ...prev,
           [srv.id]: {
@@ -296,6 +383,17 @@ export function Dashboard({
       badge: `↑${formatRate(summary.totalTx)}`,
     },
   ];
+
+  const availabilityRows = servers.map((s) => {
+    const a = availability[s.id];
+    const h = a?.history ?? [];
+    return {
+      server: s,
+      current: h.length > 0 ? h[h.length - 1] : ("unknown" as Availability),
+      history: h,
+      lastIncidentAt: a?.lastIncidentAt,
+    };
+  });
 
   const bottomStats = [
     {
@@ -659,6 +757,9 @@ export function Dashboard({
             </div>
           </div>
         </div>
+
+        {/* Batch Availability */}
+        <ServerStatusBlock rows={availabilityRows} incidents={incidents} />
 
         {/* Bottom Stats */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">

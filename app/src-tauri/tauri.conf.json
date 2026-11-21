@@ -14,10 +14,11 @@
     "windows": [
       {
         "title": "ServerHub",
-        "width": 1200,
-        "height": 780,
-        "minWidth": 900,
+        "width": 1080,
+        "height": 700,
+        "minWidth": 860,
         "minHeight": 560,
+        "center": true,
         "transparent": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,

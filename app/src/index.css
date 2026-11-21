@@ -4,7 +4,7 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme inline {
+@theme {
   --color-background: hsl(var(--hu-background));
   --color-foreground: hsl(var(--hu-foreground));
   --color-card: hsl(var(--hu-card));
@@ -40,23 +40,23 @@
   --sidebar-solid: #ececec;
   --hu-font-geist: var(--font-geist);
   --hu-font-jetbrains: var(--font-jetbrains-mono);
-  --radius: 8px;
-  --card-radius: 10px;
-  --hu-background: 0, 0%, 100%;
-  --hu-foreground: 0, 0%, 14%;
-  --hu-card: 0, 0%, 99%;
-  --hu-card-foreground: 0, 0%, 14%;
-  --hu-primary: 235, 100%, 60%;
-  --hu-primary-foreground: 0, 0%, 98%;
-  --hu-secondary: 0, 0%, 97%;
+  --radius: 12px;
+  --card-radius: 22px;
+  --hu-background: 240, 24%, 96%;
+  --hu-foreground: 0, 0%, 0%;
+  --hu-card: 0, 0%, 100%;
+  --hu-card-foreground: 0, 0%, 0%;
+  --hu-primary: 211, 100%, 50%;
+  --hu-primary-foreground: 0, 0%, 100%;
+  --hu-secondary: 240, 11%, 93%;
   --hu-secondary-foreground: 0, 0%, 20%;
-  --hu-muted: 0, 0%, 97%;
-  --hu-muted-foreground: 0, 0%, 56%;
-  --hu-accent: 0, 0%, 96%;
+  --hu-muted: 240, 11%, 93%;
+  --hu-muted-foreground: 240, 4%, 46%;
+  --hu-accent: 240, 11%, 93%;
   --hu-accent-foreground: 0, 0%, 20%;
   --hu-destructive: 9, 96%, 47%;
   --hu-destructive-foreground: 0, 0%, 98%;
-  --hu-border: 0, 0%, 92%;
+  --hu-border: 240, 6%, 85%;
   --hu-input: 0, 0%, 100%;
   --hu-ring: 0, 0%, 71%;
   --color-fd-background: hsl(var(--hu-background));
@@ -75,17 +75,17 @@
   --text-2: rgba(255, 255, 255, 0.5);
   --accent: #0a84ff;
   --sidebar-solid: #252525;
-  --hu-background: 0, 0%, 7%;
+  --hu-background: 0, 0%, 0%;
   --hu-foreground: 0, 0%, 100%;
-  --hu-card: 0, 0%, 9%;
+  --hu-card: 240, 3%, 11%;
   --hu-card-foreground: 0, 0%, 100%;
-  --hu-primary: 235, 100%, 60%;
-  --hu-primary-foreground: 0, 0%, 98%;
-  --hu-secondary: 0, 0%, 15%;
+  --hu-primary: 210, 100%, 52%;
+  --hu-primary-foreground: 0, 0%, 100%;
+  --hu-secondary: 240, 2%, 18%;
   --hu-secondary-foreground: 0, 0%, 100%;
-  --hu-muted: 0, 0%, 15%;
-  --hu-muted-foreground: 0, 0%, 71%;
-  --hu-accent: 0, 0%, 15%;
+  --hu-muted: 240, 2%, 18%;
+  --hu-muted-foreground: 240, 4%, 62%;
+  --hu-accent: 240, 2%, 18%;
   --hu-accent-foreground: 0, 0%, 100%;
   --hu-destructive: 0, 84%, 50%;
   --hu-destructive-foreground: 0, 0%, 98%;
@@ -106,8 +106,8 @@ body,
   background: transparent;
   color: var(--text);
   font-size: 13px;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
-    system-ui, sans-serif;
+  font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
@@ -130,20 +130,19 @@ html[data-platform="mac"] .mac-traffic-pad {
 }
 
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--separator);
-  border-radius: 10px;
+  background: var(--color-card);
+  border-radius: 22px;
+  box-shadow: 0 0 0 0.5px var(--color-border), 0 8px 24px rgb(0 0 0 / 0.04);
 }
 
 .popover {
-  background: var(--popover-bg);
-  border: 1px solid var(--separator);
-  border-radius: 12px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  background: var(--color-card);
+  border-radius: 28px;
+  box-shadow: 0 0 0 1px var(--color-border), 0 24px 60px rgb(0 0 0 / 0.12);
 }
 
 .sidebar-item {
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 .sidebar-item:hover {

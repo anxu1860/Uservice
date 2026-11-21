@@ -44,7 +44,7 @@ type CardState =
   | { kind: "error"; message: string; cpuHistory: number[] };
 
 const CARD_CLS =
-  "rounded-2xl border border-zinc-200 bg-white p-6 transition-all duration-300 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-950 dark:hover:border-zinc-700";
+  "rounded-[22px] bg-card p-5 shadow-[0_0_0_0.5px_var(--color-border),0_8px_24px_rgb(0_0_0/0.04)]";
 
 export function Dashboard({
   servers,
@@ -329,22 +329,22 @@ export function Dashboard({
 
   if (servers.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center bg-zinc-50 p-8 dark:bg-black">
-        <div className={cn(CARD_CLS, "max-w-md text-center")}>
-          <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
-            <Sparkles className="h-3.5 w-3.5" />
+      <div className="flex h-full items-center justify-center bg-background p-8">
+        <div className={cn(CARD_CLS, "max-w-md p-7 text-center")}>
+          <div className="mx-auto mb-4 inline-flex items-center gap-2 rounded-full bg-muted px-3 py-1 text-[13px] font-medium text-muted-foreground">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
             <span>无 Agent · SSH 实时监控</span>
           </div>
-          <h1 className="mb-2 text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
+          <h1 className="mb-2 text-[28px] font-bold tracking-[-0.02em] text-card-foreground">
             欢迎使用 ServerHub
           </h1>
-          <p className="mb-6 text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+          <p className="mb-6 text-[15px] leading-relaxed text-muted-foreground">
             添加你的第一台 Linux 服务器或导入 ~/.ssh/config，即可在此查看实时资源占用、延迟排行与快速开启终端。
           </p>
           <button
             type="button"
             onClick={onAddServer}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-blue-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-600"
+            className="inline-flex h-11 items-center gap-1.5 rounded-[12px] bg-primary px-5 text-[15px] font-semibold text-primary-foreground transition active:scale-[.97]"
           >
             <Plus className="h-4 w-4" />
             <span>添加服务器</span>
@@ -422,42 +422,42 @@ export function Dashboard({
   ];
 
   return (
-    <div className="h-full overflow-y-auto bg-zinc-50 dark:bg-black">
-      <div className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-8">
+    <div className="h-full overflow-y-auto bg-background">
+      <div className="mx-auto flex max-w-7xl flex-col gap-6 px-5 py-6">
         {/* Hero Header */}
-        <div className="flex flex-col gap-3">
-          <div className="inline-flex w-fit items-center gap-2 rounded-full border border-zinc-200 bg-white px-3.5 py-1.5 dark:border-zinc-700 dark:bg-zinc-900">
-            <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-            <span className="text-xs font-semibold tracking-wide text-zinc-600 dark:text-zinc-300">
+        <div className="flex flex-col gap-2">
+          <div className="inline-flex w-fit items-center gap-2 rounded-full bg-card px-3 py-1 text-[13px] shadow-[0_0_0_0.5px_var(--color-border)]">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <span className="font-medium text-muted-foreground">
               无 Agent · SSH 实时监控
             </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 md:text-4xl dark:text-white">
+          <h1 className="text-[28px] font-bold tracking-[-0.02em] text-foreground">
             服务器概览
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-[13px] text-muted-foreground">
             共 {servers.length} 台 · 在线 {summary.onlineCount} 台 · 每 3 秒刷新
           </p>
         </div>
 
         {/* Main Bento Grid */}
-        <div className="grid auto-rows-[minmax(150px,auto)] grid-cols-1 gap-4 md:grid-cols-4">
+        <div className="grid auto-rows-[minmax(150px,auto)] grid-cols-1 gap-3 md:grid-cols-4">
           {/* Large Hero Card - Cluster Health */}
           <div
             className={cn(
               CARD_CLS,
-              "flex flex-col justify-between gap-5 md:col-span-2 md:row-span-2"
+              "flex flex-col justify-between gap-4 md:col-span-2 md:row-span-2"
             )}
           >
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+              <div className="mb-2.5 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-[13px] font-medium text-foreground">
                 <Activity className="h-3.5 w-3.5 text-emerald-500" />
                 <span>集群健康</span>
               </div>
-              <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
+              <h2 className="text-[17px] font-semibold text-card-foreground">
                 节点实时状态
               </h2>
-              <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mt-0.5 text-[13px] text-muted-foreground">
                 点击节点切换查看详细指标
               </p>
             </div>
@@ -484,21 +484,21 @@ export function Dashboard({
                     type="button"
                     onClick={() => setSelectedId(srv.id)}
                     className={cn(
-                      "flex flex-col rounded-xl border p-3 text-left transition-all duration-200",
+                      "flex flex-col rounded-[14px] p-3 text-left transition-all duration-200",
                       isSelected
-                        ? "border-zinc-300 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800"
-                        : "border-zinc-200 bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+                        ? "bg-primary/10 ring-1 ring-primary/40"
+                        : "bg-muted hover:bg-muted/80"
                     )}
                   >
                     <div className="flex items-center gap-2">
                       <span
                         className={cn("h-2 w-2 shrink-0 rounded-full", dot)}
                       />
-                      <span className="truncate text-xs font-semibold text-zinc-900 dark:text-white">
+                      <span className="truncate text-[13px] font-semibold text-card-foreground">
                         {srv.name}
                       </span>
                     </div>
-                    <span className="mt-1 font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
+                    <span className="mt-1 font-mono text-[12px] text-muted-foreground">
                       {subText}
                     </span>
                   </button>
@@ -508,23 +508,23 @@ export function Dashboard({
 
             {/* Selected Server Detail */}
             {selectedServer && (
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-800 dark:bg-zinc-900">
+              <div className="rounded-[14px] bg-muted p-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
-                    <p className="font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
+                    <p className="font-mono text-[12px] text-muted-foreground">
                       {selectedStats
                         ? `${selectedStats.hostname} · ${selectedStats.os}`
                         : `${selectedServer.username}@${selectedServer.host}:${selectedServer.port}`}
                     </p>
                     <div className="mt-1 flex items-baseline gap-2">
-                      <span className="font-mono text-4xl font-bold text-zinc-900 dark:text-white">
+                      <span className="font-mono text-4xl font-bold tabular-nums text-card-foreground">
                         {selectedStats?.cpuPercent !== null &&
                         selectedStats?.cpuPercent !== undefined
                           ? `${selectedStats.cpuPercent.toFixed(1)}%`
                           : "—"}
                       </span>
                       {selectedStats && (
-                        <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                        <span className="text-[13px] text-muted-foreground">
                           CPU ({selectedStats.cores} 核)
                         </span>
                       )}
@@ -539,7 +539,7 @@ export function Dashboard({
                     <button
                       type="button"
                       onClick={() => onOpenTerminal(selectedServer)}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-600"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-primary px-3.5 text-[13px] font-semibold text-primary-foreground transition active:scale-[.97]"
                     >
                       <TerminalIcon className="h-3.5 w-3.5" />
                       <span>打开终端</span>
@@ -548,14 +548,12 @@ export function Dashboard({
                 </div>
 
                 {selectedStats && (
-                  <div className="mt-4 space-y-2 text-xs">
+                  <div className="mt-4 space-y-2 text-[13px]">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <div className="mb-1 flex justify-between text-[11px]">
-                          <span className="text-zinc-500 dark:text-zinc-400">
-                            内存
-                          </span>
-                          <span className="font-mono text-zinc-700 dark:text-zinc-300">
+                        <div className="mb-1 flex justify-between text-[12px]">
+                          <span className="text-muted-foreground">内存</span>
+                          <span className="font-mono tabular-nums text-card-foreground">
                             {formatBytes(selectedStats.memUsed)} /{" "}
                             {formatBytes(selectedStats.memTotal)}
                           </span>
@@ -571,11 +569,9 @@ export function Dashboard({
                         />
                       </div>
                       <div>
-                        <div className="mb-1 flex justify-between text-[11px]">
-                          <span className="text-zinc-500 dark:text-zinc-400">
-                            磁盘 (/)
-                          </span>
-                          <span className="font-mono text-zinc-700 dark:text-zinc-300">
+                        <div className="mb-1 flex justify-between text-[12px]">
+                          <span className="text-muted-foreground">磁盘 (/)</span>
+                          <span className="font-mono tabular-nums text-card-foreground">
                             {formatBytes(selectedStats.diskUsed)} /{" "}
                             {formatBytes(selectedStats.diskTotal)}
                           </span>
@@ -591,7 +587,7 @@ export function Dashboard({
                         />
                       </div>
                     </div>
-                    <div className="flex justify-between pt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                    <div className="flex justify-between pt-1 text-[12px] text-muted-foreground">
                       <span>
                         负载 {selectedStats.load1.toFixed(2)} /{" "}
                         {selectedStats.load5.toFixed(2)} /{" "}
@@ -608,18 +604,18 @@ export function Dashboard({
           {/* Performance Summary Card */}
           <div className={cn(CARD_CLS, "flex flex-col justify-between")}>
             <div>
-              <div className="mb-4 flex items-center justify-between">
-                <div className="rounded-lg border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-700 dark:bg-zinc-800">
-                  <BarChart3 className="h-4 w-4 text-zinc-900 dark:text-white" />
+              <div className="mb-3 flex items-center justify-between">
+                <div className="rounded-[10px] bg-muted p-2">
+                  <BarChart3 className="h-4 w-4 text-foreground" />
                 </div>
-                <span className="rounded-lg bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-500">
+                <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[12px] font-semibold text-emerald-500">
                   Live
                 </span>
               </div>
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
+              <h3 className="text-[17px] font-semibold text-card-foreground">
                 全局性能
               </h3>
-              <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mb-3 text-[13px] text-muted-foreground">
                 实时聚合指标
               </p>
 
@@ -630,20 +626,20 @@ export function Dashboard({
                     type="button"
                     onClick={() => setSelectedMetric(idx)}
                     className={cn(
-                      "w-full rounded-lg border p-2 text-left transition-all duration-200",
+                      "w-full rounded-[12px] p-2.5 text-left transition-all duration-200",
                       selectedMetric === idx
-                        ? "border-zinc-300 bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-800"
-                        : "border-zinc-200 bg-zinc-50 hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700"
+                        ? "bg-primary/10 ring-1 ring-primary/40"
+                        : "bg-muted hover:bg-muted/80"
                     )}
                   >
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">
+                    <p className="text-[11px] text-muted-foreground">
                       {m.label}
                     </p>
                     <div className="mt-0.5 flex items-baseline justify-between">
-                      <span className="font-mono text-sm font-bold text-zinc-900 dark:text-white">
+                      <span className="font-mono text-[15px] font-bold tabular-nums text-card-foreground">
                         {m.value}
                       </span>
-                      <span className="font-mono text-[10px] font-semibold text-zinc-500 dark:text-zinc-300">
+                      <span className="font-mono text-[11px] font-semibold text-muted-foreground">
                         {m.badge}
                       </span>
                     </div>
@@ -656,18 +652,18 @@ export function Dashboard({
           {/* Latency Ranking Card */}
           <div className={cn(CARD_CLS, "flex flex-col justify-between")}>
             <div>
-              <div className="mb-4 w-fit rounded-lg border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-700 dark:bg-zinc-800">
+              <div className="mb-3 w-fit rounded-[10px] bg-muted p-2">
                 <Zap className="h-4 w-4 text-amber-500" />
               </div>
-              <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
+              <h3 className="text-[17px] font-semibold text-card-foreground">
                 延迟排行
               </h3>
-              <p className="mb-3 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mb-3 text-[13px] text-muted-foreground">
                 TCP 握手往返耗时
               </p>
 
               {summary.latencyRanking.length === 0 ? (
-                <div className="py-8 text-center text-xs text-zinc-500 dark:text-zinc-400">
+                <div className="py-8 text-center text-[13px] text-muted-foreground">
                   暂无延迟数据
                 </div>
               ) : (
@@ -682,15 +678,15 @@ export function Dashboard({
                           : "bg-red-500";
                     return (
                       <div key={server.id} className="space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="truncate font-medium text-zinc-900 dark:text-white">
+                        <div className="flex items-center justify-between text-[13px]">
+                          <span className="truncate font-medium text-card-foreground">
                             {server.name}
                           </span>
-                          <span className="shrink-0 font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
+                          <span className="shrink-0 font-mono text-[12px] tabular-nums text-muted-foreground">
                             {Math.round(latencyMs)} ms
                           </span>
                         </div>
-                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                           <div
                             className={cn(
                               "h-full rounded-full transition-all duration-300",
@@ -715,18 +711,16 @@ export function Dashboard({
             )}
           >
             <div>
-              <div className="mb-3 flex items-center gap-2">
-                <div className="rounded-lg border border-zinc-200 bg-zinc-100 p-2 dark:border-zinc-700 dark:bg-zinc-800">
-                  <TerminalIcon className="h-4 w-4 text-zinc-900 dark:text-white" />
+              <div className="mb-3 flex items-center gap-2.5">
+                <div className="rounded-[10px] bg-muted p-2">
+                  <TerminalIcon className="h-4 w-4 text-foreground" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-bold text-zinc-900 dark:text-white">
-                    快速连接
-                  </h3>
-                </div>
+                <h3 className="text-[17px] font-semibold text-card-foreground">
+                  快速连接
+                </h3>
               </div>
 
-              <div className="max-h-40 overflow-auto rounded-xl border border-zinc-800 bg-zinc-950 p-3 font-mono text-xs leading-relaxed text-zinc-300 dark:bg-black">
+              <div className="max-h-40 overflow-auto rounded-[14px] bg-black p-3 font-mono text-xs leading-relaxed text-zinc-300">
                 <div className="flex gap-3 text-zinc-500">
                   <span className="w-5 text-right select-none">1</span>
                   <span>{"// 点击任意一行打开终端"}</span>
@@ -736,7 +730,7 @@ export function Dashboard({
                     key={srv.id}
                     type="button"
                     onClick={() => onOpenTerminal(srv)}
-                    className="flex w-full gap-3 rounded px-1 py-0.5 text-left transition hover:bg-zinc-800/80"
+                    className="flex w-full gap-3 rounded px-1 py-0.5 text-left transition hover:bg-white/10"
                   >
                     <span className="w-5 text-right text-zinc-600 select-none">
                       {idx + 2}
@@ -762,16 +756,16 @@ export function Dashboard({
         <ServerStatusBlock rows={availabilityRows} incidents={incidents} />
 
         {/* Bottom Stats */}
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {bottomStats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <div key={stat.label} className={cn(CARD_CLS, "p-4")}>
-                <Icon className="mb-3 h-4 w-4 text-zinc-700 dark:text-zinc-300" />
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <div key={stat.label} className={CARD_CLS}>
+                <Icon className="mb-2.5 h-4 w-4 text-muted-foreground" />
+                <p className="text-[13px] text-muted-foreground">
                   {stat.label}
                 </p>
-                <p className="mt-1 font-mono text-xl font-bold text-zinc-900 dark:text-white">
+                <p className="mt-1 font-mono text-xl font-bold tabular-nums text-card-foreground">
                   {stat.value}
                 </p>
               </div>
@@ -781,10 +775,10 @@ export function Dashboard({
 
         {/* All Servers Detail Grid */}
         <div>
-          <h2 className="mb-4 text-base font-semibold text-zinc-900 dark:text-white">
+          <h2 className="mb-3 text-[17px] font-semibold text-foreground">
             全部服务器
           </h2>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
             {servers.map((srv) => {
               const state = cards[srv.id] ?? {
                 kind: "connecting" as const,
@@ -799,7 +793,7 @@ export function Dashboard({
               const latency = stats?.latencyMs;
               const latencyClass =
                 latency == null
-                  ? "text-zinc-500 dark:text-zinc-400"
+                  ? "text-muted-foreground"
                   : latency < 80
                     ? "bg-emerald-500/15 text-emerald-500"
                     : latency < 200
@@ -818,10 +812,7 @@ export function Dashboard({
               return (
                 <div
                   key={srv.id}
-                  className={cn(
-                    CARD_CLS,
-                    "flex flex-col justify-between p-5"
-                  )}
+                  className={cn(CARD_CLS, "flex flex-col justify-between")}
                 >
                   <div>
                     <div className="mb-3 flex items-start justify-between gap-2">
@@ -833,18 +824,18 @@ export function Dashboard({
                               statusDot
                             )}
                           />
-                          <span className="truncate text-sm font-semibold text-zinc-900 dark:text-white">
+                          <span className="truncate text-[15px] font-semibold text-card-foreground">
                             {srv.name}
                           </span>
                         </div>
-                        <div className="mt-0.5 truncate font-mono text-[11px] text-zinc-500 dark:text-zinc-400">
+                        <div className="mt-0.5 truncate font-mono text-[12px] text-muted-foreground">
                           {srv.username}@{srv.host}:{srv.port}
                         </div>
                       </div>
                       {latency != null && (
                         <span
                           className={cn(
-                            "shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] font-medium",
+                            "shrink-0 rounded-full px-2.5 py-0.5 font-mono text-[11px] font-medium tabular-nums",
                             latencyClass
                           )}
                         >
@@ -854,32 +845,32 @@ export function Dashboard({
                     </div>
 
                     {state.kind === "need_password" ? (
-                      <div className="my-5 flex flex-col items-center gap-2 text-center">
-                        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      <div className="my-5 flex flex-col items-center gap-2.5 text-center">
+                        <p className="text-[13px] text-muted-foreground">
                           需要登录密码以采集状态
                         </p>
                         <button
                           type="button"
                           onClick={() => onNeedPassword(srv)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-xs font-medium text-zinc-800 transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-zinc-700"
+                          className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-muted px-3.5 text-[13px] font-medium text-foreground transition active:scale-[.97]"
                         >
-                          <KeyRound className="h-3.5 w-3.5 text-blue-500" />
+                          <KeyRound className="h-3.5 w-3.5 text-primary" />
                           <span>输入密码开始监控</span>
                         </button>
                       </div>
                     ) : state.kind === "error" && !stats ? (
-                      <div className="my-4 rounded-lg bg-red-500/10 p-2.5 text-xs text-red-500">
+                      <div className="my-4 rounded-[12px] bg-destructive/10 p-3 text-[13px] text-destructive">
                         {state.message}
                       </div>
                     ) : stats ? (
-                      <div className="space-y-2.5 text-xs">
+                      <div className="space-y-2.5 text-[13px]">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-zinc-500 dark:text-zinc-400">
+                          <span className="text-muted-foreground">
                             CPU ({stats.cores} 核)
                           </span>
                           <div className="flex items-center gap-2">
                             <Sparkline values={state.cpuHistory} />
-                            <span className="w-11 text-right font-mono font-medium text-zinc-900 dark:text-white">
+                            <span className="w-12 text-right font-mono font-medium tabular-nums text-card-foreground">
                               {stats.cpuPercent !== null
                                 ? `${stats.cpuPercent.toFixed(1)}%`
                                 : "—"}
@@ -889,10 +880,8 @@ export function Dashboard({
                         <ProgressBar percent={stats.cpuPercent ?? 0} />
 
                         <div className="flex items-center justify-between">
-                          <span className="text-zinc-500 dark:text-zinc-400">
-                            内存
-                          </span>
-                          <span className="font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
+                          <span className="text-muted-foreground">内存</span>
+                          <span className="font-mono text-[12px] tabular-nums text-card-foreground">
                             {formatBytes(stats.memUsed)} /{" "}
                             {formatBytes(stats.memTotal)} ({memPct.toFixed(0)}%)
                           </span>
@@ -900,10 +889,8 @@ export function Dashboard({
                         <ProgressBar percent={memPct} />
 
                         <div className="flex items-center justify-between">
-                          <span className="text-zinc-500 dark:text-zinc-400">
-                            磁盘 (/)
-                          </span>
-                          <span className="font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
+                          <span className="text-muted-foreground">磁盘 (/)</span>
+                          <span className="font-mono text-[12px] tabular-nums text-card-foreground">
                             {formatBytes(stats.diskUsed)} /{" "}
                             {formatBytes(stats.diskTotal)} ({diskPct.toFixed(0)}
                             %)
@@ -911,25 +898,25 @@ export function Dashboard({
                         </div>
                         <ProgressBar percent={diskPct} />
 
-                        <div className="flex items-center justify-between border-t border-zinc-200 pt-2 text-[11px] text-zinc-500 dark:border-zinc-800 dark:text-zinc-400">
+                        <div className="flex items-center justify-between border-t-[0.5px] border-border pt-2.5 text-[12px] text-muted-foreground">
                           <span>
                             负载 {stats.load1.toFixed(2)} ·{" "}
                             {formatUptime(stats.uptimeSecs)}
                           </span>
-                          <span className="inline-flex items-center gap-2 font-mono">
+                          <span className="inline-flex items-center gap-2 font-mono tabular-nums">
                             <span className="inline-flex items-center gap-0.5">
                               <ArrowDown className="h-3 w-3 text-emerald-500" />
                               {formatRate(stats.netRxRate)}
                             </span>
                             <span className="inline-flex items-center gap-0.5">
-                              <ArrowUp className="h-3 w-3 text-blue-500" />
+                              <ArrowUp className="h-3 w-3 text-primary" />
                               {formatRate(stats.netTxRate)}
                             </span>
                           </span>
                         </div>
                       </div>
                     ) : (
-                      <div className="py-8 text-center text-xs text-zinc-500 dark:text-zinc-400">
+                      <div className="py-8 text-center text-[13px] text-muted-foreground">
                         正在采集系统指标…
                       </div>
                     )}
@@ -939,7 +926,7 @@ export function Dashboard({
                     <button
                       type="button"
                       onClick={() => onOpenTerminal(srv)}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500/12 px-3 py-1.5 text-xs font-medium text-blue-500 transition hover:bg-blue-500/20"
+                      className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-primary/10 px-3.5 text-[13px] font-semibold text-primary transition hover:bg-primary/15 active:scale-[.97]"
                     >
                       <TerminalIcon className="h-3.5 w-3.5" />
                       <span>打开终端</span>
@@ -962,7 +949,7 @@ function getStatusDot(kind: CardState["kind"]): string {
     case "connecting":
       return "bg-amber-400 animate-pulse";
     case "need_password":
-      return "bg-zinc-400";
+      return "bg-muted-foreground/50";
     case "error":
       return "bg-red-500";
   }
@@ -975,9 +962,9 @@ function ProgressBar({ percent }: { percent: number }) {
       ? "bg-red-500"
       : clamped > 65
         ? "bg-amber-500"
-        : "bg-blue-500";
+        : "bg-primary";
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
       <div
         className={cn("h-full rounded-full transition-all duration-300", color)}
         style={{ width: `${clamped}%` }}
@@ -1010,7 +997,7 @@ function Sparkline({
     <svg width={width} height={height} className="overflow-visible">
       <polyline
         fill="none"
-        stroke="var(--accent)"
+        stroke="var(--color-primary)"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

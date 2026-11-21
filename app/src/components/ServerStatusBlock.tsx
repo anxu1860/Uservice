@@ -46,7 +46,7 @@ function StatusIcon({ status }: { status: Availability }) {
     case "up":
       return <CheckCircle className="h-4 w-4 shrink-0 text-green-500" />;
     case "degraded":
-      return <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-500" />;
+      return <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />;
     case "down":
       return <Circle className="h-4 w-4 shrink-0 text-red-500" />;
     case "unknown":
@@ -66,7 +66,7 @@ function UptimeBar({ history }: { history: Availability[] }) {
       {Array.from({ length: padCount }).map((_, i) => (
         <div
           key={`pad-${i}`}
-          className="h-6 w-1.5 shrink-0 rounded-sm bg-zinc-200 dark:bg-zinc-800"
+          className="h-6 w-1.5 shrink-0 rounded-sm bg-muted"
           title="未探测"
         />
       ))}
@@ -75,10 +75,10 @@ function UptimeBar({ history }: { history: Availability[] }) {
           st === "up"
             ? "bg-green-400"
             : st === "degraded"
-              ? "bg-yellow-400"
+              ? "bg-amber-400"
               : st === "down"
                 ? "bg-red-400"
-                : "bg-zinc-300 dark:bg-zinc-700";
+                : "bg-muted-foreground/30";
         return (
           <div
             key={`sample-${i}`}
@@ -134,35 +134,36 @@ export function ServerStatusBlock({
       : "—";
 
   return (
-    <Card className="rounded-2xl border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-      <CardContent className="flex flex-col gap-6 p-6">
+    <Card className="rounded-[22px] border-0 bg-card shadow-[0_0_0_0.5px_var(--color-border),0_8px_24px_rgb(0_0_0/0.04)]">
+      <CardContent className="flex flex-col gap-5 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2.5">
-              <span className="text-lg font-semibold text-zinc-900 dark:text-white">
+              <span className="text-[17px] font-semibold text-card-foreground">
                 批量可用性
               </span>
-              <span className="rounded-md bg-zinc-100 px-2 py-0.5 font-mono text-xs font-medium text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+              <span className="rounded-full bg-muted px-2.5 py-0.5 font-mono text-[13px] font-medium text-foreground">
                 可用率 {totalRate}
               </span>
             </div>
-            <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-0.5 text-[13px] text-muted-foreground">
               最近 30 次探测 · 每 3 秒一次
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 text-xs font-medium">
+            <div className="flex items-center gap-2 text-[13px] font-medium">
               <span className="text-emerald-500">正常 {upCount}</span>
-              <span className="text-zinc-400">·</span>
+              <span className="text-muted-foreground">·</span>
               <span className="text-amber-500">降级 {degradedCount}</span>
-              <span className="text-zinc-400">·</span>
+              <span className="text-muted-foreground">·</span>
               <span className="text-red-500">故障 {downCount}</span>
             </div>
 
             <Button
               size="sm"
               variant="secondary"
+              className="rounded-[10px]"
               onClick={() => setShowIncidents((v) => !v)}
               aria-label={showIncidents ? "收起故障记录" : "展开故障记录"}
             >
@@ -171,7 +172,7 @@ export function ServerStatusBlock({
               ) : (
                 <ChevronDown className="h-4 w-4" />
               )}
-              <span className="text-xs">
+              <span className="text-[13px]">
                 {showIncidents ? "收起" : `故障记录 (${incidents.length})`}
               </span>
             </Button>
@@ -181,19 +182,19 @@ export function ServerStatusBlock({
         <div className="grid grid-cols-1 gap-x-8 gap-y-4 lg:grid-cols-2">
           {rows.map((row) => (
             <div key={row.server.id} className="flex flex-col gap-1">
-              <div className="flex flex-wrap items-center gap-3 text-sm">
+              <div className="flex flex-wrap items-center gap-3 text-[15px]">
                 <StatusIcon status={row.current} />
-                <span className="font-medium text-zinc-900 dark:text-white">
+                <span className="font-semibold text-card-foreground">
                   {row.server.name}
                 </span>
-                <span className="text-muted-foreground text-xs">
+                <span className="text-[13px] text-muted-foreground">
                   {STATUS_LABEL[row.current]}
                 </span>
-                <span className="text-muted-foreground font-mono text-xs">
+                <span className="font-mono text-[13px] text-muted-foreground">
                   {calcAvailability(row.history)}
                 </span>
                 {row.lastIncidentAt && (
-                  <span className="text-muted-foreground ml-auto font-mono text-xs">
+                  <span className="ml-auto font-mono text-[13px] text-muted-foreground">
                     最近故障: {formatTime(row.lastIncidentAt)}
                   </span>
                 )}
@@ -204,17 +205,21 @@ export function ServerStatusBlock({
         </div>
 
         {showIncidents && (
-          <div className="bg-accent rounded-card mt-1 flex flex-col gap-2 p-4">
-            <span className="mb-1 text-sm font-semibold">故障记录</span>
+          <div className="mt-1 flex flex-col gap-2 rounded-[14px] bg-muted p-4">
+            <span className="mb-1 text-[15px] font-semibold text-card-foreground">
+              故障记录
+            </span>
             {incidents.length === 0 ? (
-              <span className="text-muted-foreground text-xs">暂无故障记录</span>
+              <span className="text-[13px] text-muted-foreground">
+                暂无故障记录
+              </span>
             ) : (
               incidents.map((inc) => (
                 <div
                   key={inc.id}
-                  className="border-muted-foreground/10 flex flex-col gap-1 border-b pb-2 last:border-b-0 last:pb-0"
+                  className="flex flex-col gap-1 border-t-[0.5px] border-border pt-2 first:border-t-0 first:pt-0"
                 >
-                  <div className="flex items-center gap-2 text-xs font-medium">
+                  <div className="flex items-center gap-2 text-[13px] font-medium text-card-foreground">
                     <span>
                       {inc.serverName} - {formatDateTime(inc.at)}
                     </span>
@@ -230,7 +235,7 @@ export function ServerStatusBlock({
                       [{STATUS_LABEL[inc.status]}]
                     </span>
                   </div>
-                  <span className="text-muted-foreground text-xs">
+                  <span className="text-[13px] text-muted-foreground">
                     {inc.desc}
                   </span>
                 </div>

@@ -25,12 +25,14 @@ export function PromptSecretModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4">
-      <div className="popover w-full max-w-sm p-5">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+      <div className="w-full max-w-[400px] rounded-[28px] bg-card px-5 pb-5 pt-[22px] shadow-[0_0_0_1px_var(--color-border),0_24px_60px_rgb(0_0_0/.12)]">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <KeyRound className="h-4 w-4 text-blue-500" />
-            <h2 className="text-sm font-semibold">输入登录密码</h2>
+            <KeyRound className="h-5 w-5 text-primary" />
+            <h2 className="text-[20px] font-bold text-card-foreground">
+              输入登录密码
+            </h2>
           </div>
           <button
             type="button"
@@ -38,20 +40,21 @@ export function PromptSecretModal({
               setPassword("");
               onCancel();
             }}
-            className="rounded-md p-1 opacity-70 transition hover:opacity-100"
+            aria-label="关闭"
+            className="grid h-[30px] w-[30px] place-items-center rounded-full bg-muted text-muted-foreground transition hover:opacity-80"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        <p className="mb-3 text-xs opacity-70">
+        <p className="mb-4 text-[13px] text-muted-foreground">
           连接{" "}
-          <span className="font-mono font-medium">
+          <span className="font-mono font-medium text-card-foreground">
             {server.username}@{server.host}:{server.port}
           </span>
         </p>
 
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <input
             type="password"
             autoFocus
@@ -59,24 +62,22 @@ export function PromptSecretModal({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="SSH 密码"
-            className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus:border-blue-500"
-            style={{ borderColor: "var(--separator)" }}
+            className="h-11 w-full rounded-[12px] bg-muted px-3.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
           />
-          <div className="flex justify-end gap-2">
+          <div className="grid grid-cols-2 gap-2.5">
             <button
               type="button"
               onClick={() => {
                 setPassword("");
                 onCancel();
               }}
-              className="rounded-lg border px-3 py-1.5 text-xs font-medium opacity-80"
-              style={{ borderColor: "var(--separator)" }}
+              className="h-11 rounded-[12px] bg-muted px-5 text-[15px] font-semibold text-foreground transition active:scale-[.97]"
             >
               取消
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-blue-500 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-blue-600"
+              className="h-11 rounded-[12px] bg-primary px-5 text-[15px] font-semibold text-primary-foreground transition active:scale-[.97]"
             >
               连接
             </button>

@@ -15,6 +15,7 @@ import {
   X,
 } from "lucide-react";
 import { useTheme, type ThemeMode } from "@/lib/theme";
+import { ConfirmDialog } from "./components/ConfirmDialog";
 import { Dashboard } from "./components/Dashboard";
 import { HostKeyModal } from "./components/HostKeyModal";
 import { ImportSshConfigModal } from "./components/ImportSshConfigModal";
@@ -47,6 +48,7 @@ export function App() {
     Record<string, string>
   >({});
   const [dashboardPollTrigger, setDashboardPollTrigger] = useState(0);
+  const [pendingDelete, setPendingDelete] = useState<Server | null>(null);
   const [latency, setLatency] = useState<
     Record<string, number | "timeout" | "pending">
   >({});
@@ -196,14 +198,6 @@ export function App() {
     });
   };
 
-  const deleteServer = async (srv: Server) => {
-    if (!window.confirm(`确定删除服务器「${srv.name}」吗？`)) return;
-    await invoke("monitor_stop", { serverId: srv.id }).catch(() => {});
-    await invoke("servers_delete", { id: srv.id }).catch(console.error);
-    await invoke("secret_forget", { serverId: srv.id }).catch(() => {});
-    await refreshServers();
-  };
-
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-transparent">
       {/* Left Vibrancy Sidebar */}
@@ -242,22 +236,16 @@ export function App() {
             type="button"
             data-active={activeTabId === "overview"}
             onClick={() => setActiveTabId("overview")}
-            className="sidebar-item flex w-full items-center gap-2 px-2.5 py-1.5 text-xs font-medium transition"
+            className="sidebar-item flex w-full items-center gap-2 px-2.5 py-1.5 text-[13px] font-medium transition"
           >
-            <LayoutDashboard className="h-3.5 w-3.5 text-blue-500" />
+            <LayoutDashboard className="h-3.5 w-3.5 text-primary" />
             <span>概览</span>
           </button>
         </div>
 
         {/* Search */}
         <div className="px-3 pb-2">
-          <div
-            className="flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs"
-            style={{
-              borderColor: "var(--separator)",
-              background: "var(--hover)",
-            }}
-          >
+          <div className="flex h-8 items-center gap-2 rounded-[10px] bg-muted px-2.5 text-[13px]">
             <Search className="h-3.5 w-3.5 opacity-55" />
             <input
               type="text"
@@ -293,7 +281,7 @@ export function App() {
                         <div className="flex min-w-0 items-center gap-2.5">
                           <ServerIcon className="h-4 w-4 shrink-0 text-blue-500" />
                           <div className="min-w-0">
-                            <div className="truncate text-xs font-medium">
+                            <div className="truncate text-[13px] font-medium">
                               {server.name}
                             </div>
                             <div className="truncate font-mono text-[11px] opacity-60">
@@ -338,10 +326,10 @@ export function App() {
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              void deleteServer(server);
+                              setPendingDelete(server);
                             }}
                             title="删除"
-                            className="rounded p-1 opacity-0 transition group-hover:opacity-60 hover:!opacity-100 hover:text-red-500"
+                            className="rounded p-1 opacity-0 transition group-hover:opacity-60 hover:!opacity-100 hover:text-destructive"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -363,10 +351,16 @@ export function App() {
             <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
             <span className="truncate">TOFU 已启用</span>
           </div>
-          <div
-            className="flex shrink-0 items-center rounded-md border p-0.5"
-            style={{ borderColor: "var(--separator)" }}
-          >
+          <div className="relative grid h-7 w-[96px] shrink-0 grid-cols-3 rounded-[9px] bg-muted p-[2px]">
+            <div
+              className="absolute bottom-[2px] left-[2px] top-[2px] w-[calc((100%-4px)/3)] rounded-[7px] bg-background shadow-[0_3px_8px_rgb(0_0_0/.12),0_3px_1px_rgb(0_0_0/.04)] transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.9,.25,1)]"
+              style={{
+                transform: `translateX(${
+                  (themeMode === "light" ? 0 : themeMode === "dark" ? 1 : 2) *
+                  100
+                }%)`,
+              }}
+            />
             {(
               [
                 { id: "light", label: "浅色", Icon: Sun },
@@ -381,10 +375,9 @@ export function App() {
                   type="button"
                   title={label}
                   onClick={() => setThemeMode(id)}
-                  className={`rounded p-1 transition ${
-                    active ? "opacity-100" : "opacity-50 hover:opacity-85"
+                  className={`relative z-10 grid place-items-center transition ${
+                    active ? "opacity-100" : "opacity-55 hover:opacity-85"
                   }`}
-                  style={active ? { background: "var(--selected)" } : undefined}
                 >
                   <Icon className="h-3 w-3" />
                 </button>
@@ -405,18 +398,13 @@ export function App() {
           <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
             <div
               onClick={() => setActiveTabId("overview")}
-              className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition ${
+              className={`flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-full px-3 text-[13px] transition ${
                 activeTabId === "overview"
-                  ? "font-medium shadow-xs"
+                  ? "bg-muted font-semibold"
                   : "opacity-70 hover:opacity-100"
               }`}
-              style={
-                activeTabId === "overview"
-                  ? { background: "var(--selected)" }
-                  : undefined
-              }
             >
-              <LayoutDashboard className="h-3.5 w-3.5 text-blue-500" />
+              <LayoutDashboard className="h-3.5 w-3.5 text-primary" />
               <span>概览</span>
             </div>
             {tabs.map((tab) => {
@@ -433,14 +421,11 @@ export function App() {
                 <div
                   key={tab.tabId}
                   onClick={() => setActiveTabId(tab.tabId)}
-                  className={`flex max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-md px-2.5 py-1 text-xs transition ${
+                  className={`flex h-7 max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-full px-3 text-[13px] transition ${
                     isActive
-                      ? "font-medium shadow-xs"
+                      ? "bg-muted font-semibold"
                       : "opacity-70 hover:opacity-100"
                   }`}
-                  style={
-                    isActive ? { background: "var(--selected)" } : undefined
-                  }
                 >
                   <span
                     className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotColor}`}
@@ -610,6 +595,48 @@ export function App() {
             setDashboardPollTrigger((n) => n + 1);
           }
         }}
+      />
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onCancel={() => setPendingDelete(null)}
+        panel={
+          pendingDelete
+            ? {
+                title: "删除服务器",
+                party: {
+                  name: pendingDelete.name,
+                  detail: `${pendingDelete.username}@${pendingDelete.host}:${pendingDelete.port}`,
+                },
+                hero: (
+                  <div className="rounded-[14px] bg-destructive/10 px-3.5 py-3 text-[15px] leading-[21px] text-destructive">
+                    将删除该服务器配置，并清除钥匙串中保存的密码与监控会话，无法撤销。
+                  </div>
+                ),
+                swipe: {
+                  label: "滑动以删除",
+                  doneLabel: "已删除",
+                  color: "var(--color-destructive)",
+                  icon: <Trash2 className="h-6 w-6" />,
+                  onConfirm: async () => {
+                    const srv = pendingDelete;
+                    await invoke("monitor_stop", { serverId: srv.id }).catch(
+                      () => {}
+                    );
+                    await invoke("servers_delete", { id: srv.id });
+                    await invoke("secret_forget", { serverId: srv.id }).catch(
+                      () => {}
+                    );
+                  },
+                  onDone: () =>
+                    setTimeout(() => {
+                      setPendingDelete(null);
+                      void refreshServers();
+                    }, 700),
+                },
+              }
+            : { title: "" }
+        }
       />
     </div>
   );

@@ -63,38 +63,41 @@ export function ImportSshConfigModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4">
-      <div className="popover w-full max-w-lg p-5">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+      <div className="w-full max-w-[440px] rounded-[28px] bg-card px-5 pb-5 pt-[22px] shadow-[0_0_0_1px_var(--color-border),0_24px_60px_rgb(0_0_0/.12)]">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <FileInput className="h-4 w-4 text-blue-500" />
-            <h2 className="text-base font-semibold">导入 ~/.ssh/config</h2>
+            <FileInput className="h-5 w-5 text-primary" />
+            <h2 className="text-[20px] font-bold text-card-foreground">
+              导入 ~/.ssh/config
+            </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 opacity-70 transition hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
+            aria-label="关闭"
+            className="grid h-[30px] w-[30px] place-items-center rounded-full bg-muted text-muted-foreground transition hover:opacity-80"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center gap-2 py-10 text-xs opacity-70">
+          <div className="flex items-center justify-center gap-2 py-10 text-[13px] text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span>正在解析 ~/.ssh/config…</span>
           </div>
         ) : error ? (
-          <div className="rounded-lg bg-red-500/10 p-3 text-xs text-red-500">
+          <div className="rounded-[14px] bg-destructive/10 p-3.5 text-[13px] text-destructive">
             {error}
           </div>
         ) : candidates.length === 0 ? (
-          <div className="py-10 text-center text-xs opacity-65">
+          <div className="py-10 text-center text-[13px] text-muted-foreground">
             未在 ~/.ssh/config 中发现可导入的主机配置。
           </div>
         ) : (
           <>
-            <div className="mb-2 flex items-center justify-between text-xs opacity-70">
+            <div className="mb-2.5 flex items-center justify-between text-[13px] text-muted-foreground">
               <span>共解析到 {candidates.length} 台主机（自动跳过重复项）</span>
               <button
                 type="button"
@@ -105,29 +108,30 @@ export function ImportSshConfigModal({
                       : new Set(candidates.map((c) => c.id))
                   )
                 }
-                className="text-blue-500 hover:underline"
+                className="font-medium text-primary hover:underline"
               >
                 {selected.size === candidates.length ? "取消全选" : "全选"}
               </button>
             </div>
-            <div
-              className="max-h-64 space-y-1 overflow-y-auto rounded-lg border p-2"
-              style={{ borderColor: "var(--separator)" }}
-            >
-              {candidates.map((srv) => (
+            <div className="max-h-64 overflow-y-auto rounded-[14px] bg-muted px-3.5 py-0.5">
+              {candidates.map((srv, idx) => (
                 <label
                   key={srv.id}
-                  className="sidebar-item flex cursor-pointer items-center gap-2.5 px-2.5 py-1.5 text-xs"
+                  className={`flex cursor-pointer items-center gap-3 py-2.5 ${
+                    idx > 0 ? "border-t-[0.5px] border-border" : ""
+                  }`}
                 >
                   <input
                     type="checkbox"
                     checked={selected.has(srv.id)}
                     onChange={() => toggle(srv.id)}
-                    className="accent-blue-500"
+                    className="h-4 w-4 accent-primary"
                   />
                   <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{srv.name}</div>
-                    <div className="truncate font-mono text-[11px] opacity-60">
+                    <div className="truncate text-[15px] font-medium text-card-foreground">
+                      {srv.name}
+                    </div>
+                    <div className="truncate font-mono text-[12px] text-muted-foreground">
                       {srv.username}@{srv.host}:{srv.port}
                     </div>
                   </div>
@@ -137,12 +141,11 @@ export function ImportSshConfigModal({
           </>
         )}
 
-        <div className="mt-4 flex justify-end gap-2">
+        <div className="mt-5 grid grid-cols-2 gap-2.5">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg border px-3 py-1.5 text-xs font-medium opacity-80"
-            style={{ borderColor: "var(--separator)" }}
+            className="h-11 rounded-[12px] bg-muted px-5 text-[15px] font-semibold text-foreground transition active:scale-[.97]"
           >
             取消
           </button>
@@ -150,7 +153,7 @@ export function ImportSshConfigModal({
             type="button"
             disabled={loading || importing || selected.size === 0}
             onClick={handleImport}
-            className="rounded-lg bg-blue-500 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-blue-600 disabled:opacity-40"
+            className="h-11 rounded-[12px] bg-primary px-5 text-[15px] font-semibold text-primary-foreground transition active:scale-[.97] disabled:opacity-40"
           >
             {importing ? "导入中…" : `导入 (${selected.size})`}
           </button>

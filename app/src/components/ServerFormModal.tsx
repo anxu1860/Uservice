@@ -124,106 +124,113 @@ export function ServerFormModal({
     onClose();
   };
 
+  const authIndex = authType === "password" ? 0 : 1;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4">
-      <div className="popover w-full max-w-md p-5">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+      <div className="w-full max-w-[400px] rounded-[28px] bg-card px-5 pb-5 pt-[22px] shadow-[0_0_0_1px_var(--color-border),0_24px_60px_rgb(0_0_0/.12)]">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">
+          <h2 className="text-[20px] font-bold text-card-foreground">
             {initial ? "编辑服务器" : "添加服务器"}
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md p-1 opacity-70 transition hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
+            aria-label="关闭"
+            className="grid h-[30px] w-[30px] place-items-center rounded-full bg-muted text-muted-foreground transition hover:opacity-80"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-3 text-sm">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label className="mb-1 block text-xs opacity-70">显示名称</label>
+            <label className="mb-1 block text-[13px] text-muted-foreground">
+              显示名称
+            </label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="例如：生产 Web-01"
-              className="w-full rounded-lg border bg-transparent px-3 py-1.5 outline-none focus:border-blue-500"
-              style={{ borderColor: "var(--separator)" }}
+              className="h-11 w-full rounded-[12px] bg-muted px-3.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
             />
           </div>
 
           <div className="grid grid-cols-3 gap-2">
             <div className="col-span-2">
-              <label className="mb-1 block text-xs opacity-70">主机 / IP *</label>
+              <label className="mb-1 block text-[13px] text-muted-foreground">
+                主机 / IP *
+              </label>
               <input
                 type="text"
                 required
                 value={host}
                 onChange={(e) => setHost(e.target.value)}
                 placeholder="192.168.1.10"
-                className="w-full rounded-lg border bg-transparent px-3 py-1.5 outline-none focus:border-blue-500"
-                style={{ borderColor: "var(--separator)" }}
+                className="h-11 w-full rounded-[12px] bg-muted px-3.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs opacity-70">端口</label>
+              <label className="mb-1 block text-[13px] text-muted-foreground">
+                端口
+              </label>
               <input
                 type="number"
                 min={1}
                 max={65535}
                 value={port}
                 onChange={(e) => setPort(e.target.value)}
-                className="w-full rounded-lg border bg-transparent px-3 py-1.5 outline-none focus:border-blue-500"
-                style={{ borderColor: "var(--separator)" }}
+                className="h-11 w-full rounded-[12px] bg-muted px-3.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="mb-1 block text-xs opacity-70">用户名 *</label>
+              <label className="mb-1 block text-[13px] text-muted-foreground">
+                用户名 *
+              </label>
               <input
                 type="text"
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full rounded-lg border bg-transparent px-3 py-1.5 outline-none focus:border-blue-500"
-                style={{ borderColor: "var(--separator)" }}
+                className="h-11 w-full rounded-[12px] bg-muted px-3.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs opacity-70">分组</label>
+              <label className="mb-1 block text-[13px] text-muted-foreground">
+                分组
+              </label>
               <input
                 type="text"
                 value={group}
                 onChange={(e) => setGroup(e.target.value)}
                 placeholder="例如：Production"
-                className="w-full rounded-lg border bg-transparent px-3 py-1.5 outline-none focus:border-blue-500"
-                style={{ borderColor: "var(--separator)" }}
+                className="h-11 w-full rounded-[12px] bg-muted px-3.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
               />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs opacity-70">认证方式</label>
-            <div className="grid grid-cols-2 gap-2">
+            <label className="mb-1 block text-[13px] text-muted-foreground">
+              认证方式
+            </label>
+            <div className="relative grid h-9 grid-cols-2 rounded-[9px] bg-muted p-[2px]">
+              <div
+                className="absolute bottom-[2px] left-[2px] top-[2px] w-[calc((100%-4px)/2)] rounded-[7px] bg-background shadow-[0_3px_8px_rgb(0_0_0/.12),0_3px_1px_rgb(0_0_0/.04)] transition-transform duration-300 [transition-timing-function:cubic-bezier(.2,.9,.25,1)]"
+                style={{ transform: `translateX(${authIndex * 100}%)` }}
+              />
               <button
                 type="button"
                 onClick={() => {
                   setAuthType("password");
                   setTestResult(null);
                 }}
-                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                  authType === "password"
-                    ? "border-blue-500 bg-blue-500/15 text-blue-500"
-                    : "opacity-75"
+                className={`relative z-10 text-[13px] text-foreground ${
+                  authType === "password" ? "font-semibold" : "font-medium"
                 }`}
-                style={
-                  authType === "password"
-                    ? undefined
-                    : { borderColor: "var(--separator)" }
-                }
               >
                 密码认证
               </button>
@@ -233,16 +240,9 @@ export function ServerFormModal({
                   setAuthType("key");
                   setTestResult(null);
                 }}
-                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                  authType === "key"
-                    ? "border-blue-500 bg-blue-500/15 text-blue-500"
-                    : "opacity-75"
+                className={`relative z-10 text-[13px] text-foreground ${
+                  authType === "key" ? "font-semibold" : "font-medium"
                 }`}
-                style={
-                  authType === "key"
-                    ? undefined
-                    : { borderColor: "var(--separator)" }
-                }
               >
                 SSH 私钥
               </button>
@@ -251,7 +251,7 @@ export function ServerFormModal({
 
           {authType === "password" ? (
             <div>
-              <label className="mb-1 block text-xs opacity-70">
+              <label className="mb-1 block text-[13px] text-muted-foreground">
                 密码{initial ? "（留空保持不变）" : "（可选，也可连接时输入）"}
               </label>
               <div className="relative">
@@ -259,20 +259,19 @@ export function ServerFormModal({
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="仅在会话内存中缓存，不落盘"
-                  className="w-full rounded-lg border bg-transparent py-1.5 pr-9 pl-3 outline-none focus:border-blue-500"
-                  style={{ borderColor: "var(--separator)" }}
+                  placeholder="输入 SSH 登录密码"
+                  className="h-11 w-full rounded-[12px] bg-muted py-1.5 pr-10 pl-3.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute inset-y-0 right-2 flex items-center opacity-60 hover:opacity-100"
+                  className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
                   tabIndex={-1}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-3.5 w-3.5" />
+                    <EyeOff className="h-4 w-4" />
                   ) : (
-                    <Eye className="h-3.5 w-3.5" />
+                    <Eye className="h-4 w-4" />
                   )}
                 </button>
               </div>
@@ -280,18 +279,19 @@ export function ServerFormModal({
           ) : (
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs opacity-70">私钥路径</label>
+                <label className="mb-1 block text-[13px] text-muted-foreground">
+                  私钥路径
+                </label>
                 <input
                   type="text"
                   value={keyPath}
                   onChange={(e) => setKeyPath(e.target.value)}
                   placeholder="~/.ssh/id_ed25519"
-                  className="w-full rounded-lg border bg-transparent px-3 py-1.5 font-mono text-xs outline-none focus:border-blue-500"
-                  style={{ borderColor: "var(--separator)" }}
+                  className="h-11 w-full rounded-[12px] bg-muted px-3.5 font-mono text-[13px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs opacity-70">
+                <label className="mb-1 block text-[13px] text-muted-foreground">
                   私钥口令（可选）
                 </label>
                 <div className="relative">
@@ -300,19 +300,18 @@ export function ServerFormModal({
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="如私钥有口令请填写"
-                    className="w-full rounded-lg border bg-transparent py-1.5 pr-9 pl-3 outline-none focus:border-blue-500"
-                    style={{ borderColor: "var(--separator)" }}
+                    className="h-11 w-full rounded-[12px] bg-muted py-1.5 pr-10 pl-3.5 text-[15px] text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/40"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword((v) => !v)}
-                    className="absolute inset-y-0 right-2 flex items-center opacity-60 hover:opacity-100"
+                    className="absolute inset-y-0 right-3 flex items-center text-muted-foreground hover:text-foreground"
                     tabIndex={-1}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-3.5 w-3.5" />
+                      <EyeOff className="h-4 w-4" />
                     ) : (
-                      <Eye className="h-3.5 w-3.5" />
+                      <Eye className="h-4 w-4" />
                     )}
                   </button>
                 </div>
@@ -322,10 +321,10 @@ export function ServerFormModal({
 
           {testResult && (
             <div
-              className={`rounded-lg px-3 py-1.5 text-xs ${
+              className={`rounded-[12px] px-3.5 py-2 text-[13px] ${
                 testResult.ok
                   ? "bg-emerald-500/10 text-emerald-500"
-                  : "bg-red-500/10 text-red-500"
+                  : "bg-destructive/10 text-destructive"
               }`}
             >
               {testResult.ok
@@ -334,7 +333,7 @@ export function ServerFormModal({
             </div>
           )}
 
-          <p className="text-[11px] opacity-60">
+          <p className="text-[12px] text-muted-foreground">
             密码/私钥口令保存在系统钥匙串（macOS Keychain / Windows 凭据管理器 /
             Linux Secret Service）中，不会以明文写入磁盘。
           </p>
@@ -344,24 +343,22 @@ export function ServerFormModal({
               type="button"
               onClick={handleTest}
               disabled={testing || !host.trim() || !username.trim()}
-              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium opacity-85 transition hover:opacity-100 disabled:cursor-not-allowed disabled:opacity-40"
-              style={{ borderColor: "var(--separator)" }}
+              className="inline-flex h-11 items-center gap-1.5 rounded-[12px] bg-muted px-4 text-[14px] font-semibold text-foreground transition active:scale-[.97] disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {testing && <Loader2 className="h-3 w-3 animate-spin" />}
+              {testing && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               <span>{testing ? "测试中…" : "测试连接"}</span>
             </button>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-lg border px-3 py-1.5 text-xs font-medium opacity-80 transition hover:opacity-100"
-                style={{ borderColor: "var(--separator)" }}
+                className="h-11 rounded-[12px] bg-muted px-4 text-[15px] font-semibold text-foreground transition active:scale-[.97]"
               >
                 取消
               </button>
               <button
                 type="submit"
-                className="rounded-lg bg-blue-500 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-blue-600"
+                className="h-11 rounded-[12px] bg-primary px-5 text-[15px] font-semibold text-primary-foreground transition active:scale-[.97]"
               >
                 保存
               </button>

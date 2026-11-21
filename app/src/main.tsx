@@ -1,3 +1,5 @@
+import "@fontsource-variable/geist";
+import "@fontsource-variable/jetbrains-mono";
 import ReactDOM from "react-dom/client";
 import App from "./App";
 import { applyTheme, getStoredTheme } from "./lib/theme";

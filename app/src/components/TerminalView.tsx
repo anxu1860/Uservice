@@ -76,7 +76,8 @@ export function TerminalView({
 
     const term = new Terminal({
       cursorBlink: true,
-      fontFamily: '"SF Mono", Menlo, Monaco, "Cascadia Mono", monospace',
+      fontFamily:
+        '"JetBrains Mono Variable", "JetBrains Mono", "SF Mono", Menlo, Monaco, monospace',
       fontSize: 13,
       lineHeight: 1.35,
       theme: getTheme(isDark()),

@@ -5,6 +5,10 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
+  --font-sans: "Geist Variable", "Geist", "Inter", -apple-system, BlinkMacSystemFont,
+    "SF Pro Text", "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "SF Mono", Menlo,
+    Monaco, monospace;
   --color-background: hsl(var(--hu-background));
   --color-foreground: hsl(var(--hu-foreground));
   --color-card: hsl(var(--hu-card));
@@ -38,6 +42,8 @@
   --text-2: rgba(0, 0, 0, 0.5);
   --accent: #007aff;
   --sidebar-solid: #ececec;
+  --font-geist: "Geist Variable", "Geist", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-jetbrains-mono: "JetBrains Mono Variable", "JetBrains Mono", "SF Mono", Menlo, monospace;
   --hu-font-geist: var(--font-geist);
   --hu-font-jetbrains: var(--font-jetbrains-mono);
   --radius: 12px;
@@ -106,8 +112,8 @@ body,
   background: transparent;
   color: var(--text);
   font-size: 13px;
-  font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont,
-    "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }

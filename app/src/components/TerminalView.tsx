@@ -7,6 +7,7 @@ import { SearchAddon } from "@xterm/addon-search";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import { ChevronDown, ChevronUp, RotateCw, X } from "lucide-react";
+import { isDark } from "@/lib/theme";
 import {
   parseCmdError,
   type CmdError,
@@ -58,7 +59,6 @@ export function TerminalView({
     if (!container) return;
 
     let cancelled = false;
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const getTheme = (dark: boolean) =>
       dark
         ? {
@@ -79,13 +79,16 @@ export function TerminalView({
       fontFamily: '"SF Mono", Menlo, Monaco, "Cascadia Mono", monospace',
       fontSize: 13,
       lineHeight: 1.35,
-      theme: getTheme(mediaQuery.matches),
+      theme: getTheme(isDark()),
     });
 
-    const onThemeChange = (e: MediaQueryListEvent) => {
-      term.options.theme = getTheme(e.matches);
-    };
-    mediaQuery.addEventListener("change", onThemeChange);
+    const themeObserver = new MutationObserver(() => {
+      term.options.theme = getTheme(isDark());
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
 
     const fitAddon = new FitAddon();
     const searchAddon = new SearchAddon();
@@ -250,7 +253,7 @@ export function TerminalView({
 
     return () => {
       cancelled = true;
-      mediaQuery.removeEventListener("change", onThemeChange);
+      themeObserver.disconnect();
       observer.disconnect();
       dataDisposable.dispose();
       const sid = sessionIdRef.current;

@@ -3,14 +3,18 @@ import { invoke } from "@tauri-apps/api/core";
 import {
   FileInput,
   LayoutDashboard,
+  Monitor,
+  Moon,
   Pencil,
   Plus,
   Search,
   Server as ServerIcon,
   ShieldCheck,
+  Sun,
   Trash2,
   X,
 } from "lucide-react";
+import { useTheme, type ThemeMode } from "@/lib/theme";
 import { Dashboard } from "./components/Dashboard";
 import { HostKeyModal } from "./components/HostKeyModal";
 import { ImportSshConfigModal } from "./components/ImportSshConfigModal";
@@ -22,6 +26,7 @@ import type { CmdError, Server, TabStatus, TerminalTab } from "./types";
 const LEGACY_STORAGE_KEY = "serverhub.servers.v1";
 
 export function App() {
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
   const [servers, setServers] = useState<Server[]>([]);
   const [search, setSearch] = useState("");
   const [tabs, setTabs] = useState<TerminalTab[]>([]);
@@ -351,11 +356,41 @@ export function App() {
         </div>
 
         <div
-          className="flex items-center gap-1.5 border-t px-3 py-2 text-[11px] opacity-60"
+          className="flex items-center justify-between gap-2 border-t px-3 py-2 text-[11px]"
           style={{ borderColor: "var(--separator)" }}
         >
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
-          <span>TOFU 主机指纹校验已启用</span>
+          <div className="flex min-w-0 items-center gap-1.5 opacity-60">
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+            <span className="truncate">TOFU 已启用</span>
+          </div>
+          <div
+            className="flex shrink-0 items-center rounded-md border p-0.5"
+            style={{ borderColor: "var(--separator)" }}
+          >
+            {(
+              [
+                { id: "light", label: "浅色", Icon: Sun },
+                { id: "dark", label: "深色", Icon: Moon },
+                { id: "system", label: "跟随系统", Icon: Monitor },
+              ] as { id: ThemeMode; label: string; Icon: typeof Sun }[]
+            ).map(({ id, label, Icon }) => {
+              const active = themeMode === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  title={label}
+                  onClick={() => setThemeMode(id)}
+                  className={`rounded p-1 transition ${
+                    active ? "opacity-100" : "opacity-50 hover:opacity-85"
+                  }`}
+                  style={active ? { background: "var(--selected)" } : undefined}
+                >
+                  <Icon className="h-3 w-3" />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </aside>
 

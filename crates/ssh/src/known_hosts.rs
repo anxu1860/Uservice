@@ -5,6 +5,13 @@ use std::sync::{Arc, Mutex};
 
 use crate::SshError;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HostKeyStatus {
+    Known,
+    Unknown,
+    Mismatch { expected: String },
+}
+
 #[derive(Debug, Clone)]
 pub struct KnownHostsStore {
     path: PathBuf,
@@ -34,22 +41,26 @@ impl KnownHostsStore {
         })
     }
 
-    pub fn verify_or_trust(&self, host_port: &str, fingerprint: &str) -> Result<(), SshError> {
-        let mut guard = self
+    pub fn check(&self, host_port: &str, fingerprint: &str) -> Result<HostKeyStatus, SshError> {
+        let guard = self
             .inner
             .lock()
             .map_err(|_| SshError::KnownHosts("known_hosts mutex poisoned".into()))?;
 
-        if let Some(expected) = guard.get(host_port) {
-            if expected == fingerprint {
-                return Ok(());
-            }
-            return Err(SshError::HostKeyMismatch {
-                host: host_port.to_string(),
+        match guard.get(host_port) {
+            Some(expected) if expected == fingerprint => Ok(HostKeyStatus::Known),
+            Some(expected) => Ok(HostKeyStatus::Mismatch {
                 expected: expected.clone(),
-                got: fingerprint.to_string(),
-            });
+            }),
+            None => Ok(HostKeyStatus::Unknown),
         }
+    }
+
+    pub fn trust(&self, host_port: &str, fingerprint: &str) -> Result<(), SshError> {
+        let mut guard = self
+            .inner
+            .lock()
+            .map_err(|_| SshError::KnownHosts("known_hosts mutex poisoned".into()))?;
 
         guard.insert(host_port.to_string(), fingerprint.to_string());
         if let Some(parent) = self.path.parent() {
@@ -75,37 +86,33 @@ mod tests {
     }
 
     #[test]
-    fn tofu_new_match_and_mismatch() {
+    fn unknown_trust_known_and_mismatch() {
         let path = temp_known_hosts_path();
         let store = KnownHostsStore::load_or_create(&path).expect("load_or_create");
 
-        // First time: trust on first use
-        store
-            .verify_or_trust("10.0.0.1:22", "SHA256:abc123")
-            .expect("should trust unknown host");
+        assert_eq!(
+            store.check("10.0.0.1:22", "SHA256:abc123").expect("check"),
+            HostKeyStatus::Unknown
+        );
 
-        // Reload from disk and verify match
+        store.trust("10.0.0.1:22", "SHA256:abc123").expect("trust");
+
         let reloaded = KnownHostsStore::load_or_create(&path).expect("reload");
-        reloaded
-            .verify_or_trust("10.0.0.1:22", "SHA256:abc123")
-            .expect("should match trusted fingerprint");
+        assert_eq!(
+            reloaded
+                .check("10.0.0.1:22", "SHA256:abc123")
+                .expect("check known"),
+            HostKeyStatus::Known
+        );
 
-        // Verify mismatch is rejected
-        let err = reloaded
-            .verify_or_trust("10.0.0.1:22", "SHA256:evil999")
-            .expect_err("should reject mismatched fingerprint");
-        match err {
-            SshError::HostKeyMismatch {
-                host,
-                expected,
-                got,
-            } => {
-                assert_eq!(host, "10.0.0.1:22");
-                assert_eq!(expected, "SHA256:abc123");
-                assert_eq!(got, "SHA256:evil999");
+        assert_eq!(
+            reloaded
+                .check("10.0.0.1:22", "SHA256:evil999")
+                .expect("check mismatch"),
+            HostKeyStatus::Mismatch {
+                expected: "SHA256:abc123".to_string(),
             }
-            other => panic!("unexpected error: {other:?}"),
-        }
+        );
 
         let _ = fs::remove_file(path);
     }

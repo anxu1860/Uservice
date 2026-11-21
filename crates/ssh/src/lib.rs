@@ -10,7 +10,7 @@ use russh::{ChannelMsg, Disconnect, client};
 use thiserror::Error;
 use tokio::sync::mpsc;
 
-pub use known_hosts::KnownHostsStore;
+pub use known_hosts::{HostKeyStatus, KnownHostsStore};
 
 #[derive(Debug, Error)]
 pub enum SshError {
@@ -18,6 +18,8 @@ pub enum SshError {
     Connect(String),
     #[error("authentication failed: {0}")]
     Auth(String),
+    #[error("unknown host key for {host}: {fingerprint}")]
+    HostKeyUnknown { host: String, fingerprint: String },
     #[error("host key mismatch for {host}: expected {expected}, got {got}")]
     HostKeyMismatch {
         host: String,
@@ -60,6 +62,7 @@ pub struct ConnectConfig {
     pub port: u16,
     pub username: String,
     pub auth: Auth,
+    pub accept_host_key: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -104,6 +107,7 @@ impl ShellHandle {
 struct ClientHandler {
     host_port: String,
     known_hosts: KnownHostsStore,
+    accept_host_key: Option<String>,
     key_error: Arc<Mutex<Option<SshError>>>,
 }
 
@@ -117,11 +121,37 @@ impl client::Handler for ClientHandler {
         let fingerprint = server_public_key
             .fingerprint(ssh_key::HashAlg::Sha256)
             .to_string();
-        match self
-            .known_hosts
-            .verify_or_trust(&self.host_port, &fingerprint)
-        {
-            Ok(()) => Ok(true),
+        match self.known_hosts.check(&self.host_port, &fingerprint) {
+            Ok(HostKeyStatus::Known) => Ok(true),
+            Ok(HostKeyStatus::Unknown) => {
+                if self.accept_host_key.as_deref() == Some(fingerprint.as_str()) {
+                    if let Err(err) = self.known_hosts.trust(&self.host_port, &fingerprint) {
+                        if let Ok(mut guard) = self.key_error.lock() {
+                            *guard = Some(err);
+                        }
+                        return Ok(false);
+                    }
+                    Ok(true)
+                } else {
+                    if let Ok(mut guard) = self.key_error.lock() {
+                        *guard = Some(SshError::HostKeyUnknown {
+                            host: self.host_port.clone(),
+                            fingerprint,
+                        });
+                    }
+                    Ok(false)
+                }
+            }
+            Ok(HostKeyStatus::Mismatch { expected }) => {
+                if let Ok(mut guard) = self.key_error.lock() {
+                    *guard = Some(SshError::HostKeyMismatch {
+                        host: self.host_port.clone(),
+                        expected,
+                        got: fingerprint,
+                    });
+                }
+                Ok(false)
+            }
             Err(err) => {
                 if let Ok(mut guard) = self.key_error.lock() {
                     *guard = Some(err);
@@ -153,6 +183,7 @@ impl SshSession {
         let handler = ClientHandler {
             host_port: host_port.clone(),
             known_hosts,
+            accept_host_key: cfg.accept_host_key,
             key_error: Arc::clone(&key_error),
         };
 

@@ -335,7 +335,8 @@ export function ServerFormModal({
           )}
 
           <p className="text-[11px] opacity-60">
-            密码和私钥口令仅在当前会话的内存中使用，不会写入本地磁盘。
+            密码/私钥口令保存在系统钥匙串（macOS Keychain / Windows 凭据管理器 /
+            Linux Secret Service）中，不会以明文写入磁盘。
           </p>
 
           <div className="flex items-center justify-between gap-2 pt-2">

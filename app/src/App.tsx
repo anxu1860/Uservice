@@ -11,11 +11,12 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { HostKeyModal } from "./components/HostKeyModal";
 import { ImportSshConfigModal } from "./components/ImportSshConfigModal";
 import { PromptSecretModal } from "./components/PromptSecretModal";
 import { ServerFormModal } from "./components/ServerFormModal";
 import { TerminalView } from "./components/TerminalView";
-import type { Server, TabStatus, TerminalTab } from "./types";
+import type { CmdError, Server, TabStatus, TerminalTab } from "./types";
 
 const LEGACY_STORAGE_KEY = "serverhub.servers.v1";
 
@@ -27,8 +28,15 @@ export function App() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const [pendingPasswordServer, setPendingPasswordServer] =
-    useState<Server | null>(null);
+  const [pendingPassword, setPendingPassword] = useState<{
+    tabId: string | null;
+    server: Server;
+  } | null>(null);
+  const [pendingHostKey, setPendingHostKey] = useState<{
+    tabId: string;
+    hostPort: string;
+    fingerprint: string;
+  } | null>(null);
   const [latency, setLatency] = useState<
     Record<string, number | "timeout" | "pending">
   >({});
@@ -127,6 +135,7 @@ export function App() {
         status: "connecting",
         password,
         passphrase,
+        connectNonce: 0,
       };
       setTabs((prev) => [...prev, newTab]);
       setActiveTabId(tabId);
@@ -134,19 +143,8 @@ export function App() {
     []
   );
 
-  const handleConnectClick = async (server: Server) => {
-    const secret = await invoke<string | null>("secret_get", {
-      id: server.id,
-    }).catch(() => null);
-    if (server.auth.type === "password") {
-      if (secret !== null && secret !== "") {
-        openTab(server, secret);
-      } else {
-        setPendingPasswordServer(server);
-      }
-    } else {
-      openTab(server, undefined, secret ?? undefined);
-    }
+  const handleConnectClick = (server: Server) => {
+    openTab(server);
   };
 
   const handleStatusChange = useCallback(
@@ -154,7 +152,8 @@ export function App() {
       tabId: string,
       status: TabStatus,
       sessionId?: string | null,
-      errorMessage?: string
+      errorMessage?: string,
+      errorKind?: CmdError["kind"]
     ) => {
       setTabs((prev) =>
         prev.map((t) =>
@@ -164,6 +163,7 @@ export function App() {
                 status,
                 sessionId: sessionId !== undefined ? sessionId : t.sessionId,
                 errorMessage,
+                errorKind,
                 password: status === "connected" ? undefined : t.password,
                 passphrase: status === "connected" ? undefined : t.passphrase,
               }
@@ -189,7 +189,7 @@ export function App() {
   const deleteServer = async (srv: Server) => {
     if (!window.confirm(`确定删除服务器「${srv.name}」吗？`)) return;
     await invoke("servers_delete", { id: srv.id }).catch(console.error);
-    await invoke("secret_delete", { id: srv.id }).catch(() => {});
+    await invoke("secret_forget", { serverId: srv.id }).catch(() => {});
     await refreshServers();
   };
 
@@ -426,10 +426,16 @@ export function App() {
           ) : (
             tabs.map((tab) => (
               <TerminalView
-                key={tab.tabId}
+                key={`${tab.tabId}-${tab.connectNonce}`}
                 tab={tab}
                 active={tab.tabId === activeTabId}
                 onStatusChange={handleStatusChange}
+                onHostKeyUnknown={(tabId, hostPort, fingerprint) => {
+                  setPendingHostKey({ tabId, hostPort, fingerprint });
+                }}
+                onNeedPassword={(tabId, server) => {
+                  setPendingPassword({ tabId, server });
+                }}
               />
             ))
           )}
@@ -446,9 +452,10 @@ export function App() {
         onSave={async (server, secret) => {
           await invoke("servers_upsert", { server }).catch(console.error);
           if (secret) {
-            await invoke("secret_save", { id: server.id, secret }).catch(
-              console.error
-            );
+            await invoke("secret_set", {
+              serverId: server.id,
+              password: secret,
+            }).catch(console.error);
           }
           await refreshServers();
         }}
@@ -462,17 +469,54 @@ export function App() {
         }}
       />
 
+      <HostKeyModal
+        info={pendingHostKey}
+        onCancel={() => setPendingHostKey(null)}
+        onConfirm={(fingerprint) => {
+          const item = pendingHostKey;
+          setPendingHostKey(null);
+          if (!item) return;
+          setTabs((prev) =>
+            prev.map((t) =>
+              t.tabId === item.tabId
+                ? {
+                    ...t,
+                    acceptHostKey: fingerprint,
+                    status: "connecting",
+                    errorMessage: undefined,
+                    errorKind: undefined,
+                    connectNonce: t.connectNonce + 1,
+                  }
+                : t
+            )
+          );
+        }}
+      />
+
       <PromptSecretModal
-        server={pendingPasswordServer}
-        onCancel={() => setPendingPasswordServer(null)}
+        server={pendingPassword?.server ?? null}
+        onCancel={() => setPendingPassword(null)}
         onConfirm={(password) => {
-          const srv = pendingPasswordServer;
-          setPendingPasswordServer(null);
-          if (srv) {
-            invoke("secret_save", { id: srv.id, secret: password }).catch(
-              console.error
+          const pending = pendingPassword;
+          setPendingPassword(null);
+          if (!pending) return;
+          if (pending.tabId) {
+            setTabs((prev) =>
+              prev.map((t) =>
+                t.tabId === pending.tabId
+                  ? {
+                      ...t,
+                      password,
+                      status: "connecting",
+                      errorMessage: undefined,
+                      errorKind: undefined,
+                      connectNonce: t.connectNonce + 1,
+                    }
+                  : t
+              )
             );
-            openTab(srv, password);
+          } else {
+            openTab(pending.server, password);
           }
         }}
       />

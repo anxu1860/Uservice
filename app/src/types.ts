@@ -22,6 +22,37 @@ export interface TerminalTab {
   sessionId: string | null;
   status: TabStatus;
   errorMessage?: string;
+  errorKind?: CmdError["kind"];
   password?: string;
   passphrase?: string;
+  acceptHostKey?: string;
+  connectNonce: number;
+}
+
+export interface CmdError {
+  kind:
+    | "host_key_unknown"
+    | "host_key_mismatch"
+    | "auth"
+    | "connect"
+    | "other";
+  message: string;
+  fingerprint?: string | null;
+  expected?: string | null;
+}
+
+export function parseCmdError(err: unknown): CmdError {
+  if (typeof err === "object" && err !== null && "kind" in err && "message" in err) {
+    const e = err as Record<string, unknown>;
+    return {
+      kind: String(e.kind) as CmdError["kind"],
+      message: String(e.message),
+      fingerprint: typeof e.fingerprint === "string" ? e.fingerprint : null,
+      expected: typeof e.expected === "string" ? e.expected : null,
+    };
+  }
+  return {
+    kind: "other",
+    message: err instanceof Error ? err.message : String(err),
+  };
 }

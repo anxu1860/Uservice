@@ -4,7 +4,9 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use serverhub_core::{Server, ServerStore, ssh_config};
-use serverhub_ssh::{Auth, ConnectConfig, KnownHostsStore, ShellEvent, ShellHandle, SshSession};
+use serverhub_ssh::{
+    Auth, ConnectConfig, KnownHostsStore, ShellEvent, ShellHandle, SshError, SshSession,
+};
 use tauri::Manager;
 use tauri::ipc::Channel;
 use tokio::sync::Mutex;
@@ -21,6 +23,70 @@ struct SessionEntry {
 struct AppState {
     sessions: Arc<Mutex<HashMap<Uuid, SessionEntry>>>,
     store_lock: Mutex<()>,
+    secret_cache: Mutex<HashMap<String, String>>,
+}
+
+#[derive(Debug, Serialize)]
+struct CmdError {
+    kind: String,
+    message: String,
+    fingerprint: Option<String>,
+    expected: Option<String>,
+}
+
+impl CmdError {
+    fn auth(message: impl Into<String>) -> Self {
+        Self {
+            kind: "auth".to_string(),
+            message: message.into(),
+            fingerprint: None,
+            expected: None,
+        }
+    }
+
+    fn connect(message: impl Into<String>) -> Self {
+        Self {
+            kind: "connect".to_string(),
+            message: message.into(),
+            fingerprint: None,
+            expected: None,
+        }
+    }
+
+    fn other(message: impl Into<String>) -> Self {
+        Self {
+            kind: "other".to_string(),
+            message: message.into(),
+            fingerprint: None,
+            expected: None,
+        }
+    }
+}
+
+impl From<SshError> for CmdError {
+    fn from(err: SshError) -> Self {
+        match err {
+            SshError::HostKeyUnknown { host, fingerprint } => Self {
+                kind: "host_key_unknown".to_string(),
+                message: format!("未知主机指纹 ({host}): {fingerprint}"),
+                fingerprint: Some(fingerprint),
+                expected: None,
+            },
+            SshError::HostKeyMismatch {
+                host,
+                expected,
+                got,
+            } => Self {
+                kind: "host_key_mismatch".to_string(),
+                message: format!("主机 {host} 公钥指纹不匹配，可能存在中间人攻击"),
+                fingerprint: Some(got),
+                expected: Some(expected),
+            },
+            SshError::Auth(msg) | SshError::KeyLoad(msg) => Self::auth(msg),
+            SshError::Connect(msg) => Self::connect(msg),
+            other => Self::other(other.to_string()),
+        }
+    }
 }
 
 #[derive(Deserialize)]
@@ -28,7 +94,7 @@ struct AppState {
 enum SshAuthInput {
     Password {
         #[serde(default)]
-        password: String,
+        password: Option<String>,
     },
     Key {
         path: String,
@@ -38,33 +104,65 @@ enum SshAuthInput {
 
 #[derive(Deserialize)]
 struct SshConnectInput {
+    server_id: Option<String>,
     host: String,
     port: u16,
     username: String,
     auth: SshAuthInput,
+    accept_host_key: Option<String>,
 }
 
-impl From<SshConnectInput> for ConnectConfig {
-    fn from(cfg: SshConnectInput) -> Self {
-        let auth = match cfg.auth {
-            SshAuthInput::Password { password } => Auth::Password(password),
-            SshAuthInput::Key { path, passphrase } => Auth::Key { path, passphrase },
-        };
-        ConnectConfig {
-            host: cfg.host,
-            port: cfg.port,
-            username: cfg.username,
-            auth,
-        }
-    }
-}
-
-fn load_known_hosts(app: &tauri::AppHandle) -> Result<KnownHostsStore, String> {
+fn load_known_hosts(app: &tauri::AppHandle) -> Result<KnownHostsStore, CmdError> {
     let data_dir = app
         .path()
         .app_data_dir()
-        .map_err(|e| format!("无法获取应用数据目录: {e}"))?;
-    KnownHostsStore::load_or_create(data_dir.join("known_hosts.json")).map_err(|e| e.to_string())
+        .map_err(|e| CmdError::other(format!("无法获取应用数据目录: {e}")))?;
+    KnownHostsStore::load_or_create(data_dir.join("known_hosts.json")).map_err(CmdError::from)
+}
+
+async fn resolve_secret(state: &AppState, server_id: &str) -> Option<String> {
+    if let Some(cached) = state.secret_cache.lock().await.get(server_id).cloned()
+        && !cached.is_empty()
+    {
+        return Some(cached);
+    }
+
+    let id = server_id.to_string();
+    let found = tokio::task::spawn_blocking(move || {
+        let entry = keyring::Entry::new(KEYRING_SERVICE, &id).ok()?;
+        entry.get_password().ok()
+    })
+    .await
+    .ok()
+    .flatten()
+    .filter(|s| !s.is_empty());
+
+    if let Some(ref val) = found {
+        state
+            .secret_cache
+            .lock()
+            .await
+            .insert(server_id.to_string(), val.clone());
+    }
+    found
+}
+
+async fn persist_secret(state: &AppState, server_id: &str, secret: &str) -> Result<(), CmdError> {
+    {
+        let mut cache = state.secret_cache.lock().await;
+        if secret.is_empty() {
+            cache.remove(server_id);
+        } else {
+            cache.insert(server_id.to_string(), secret.to_string());
+        }
+    }
+
+    let id = server_id.to_string();
+    let val = secret.to_string();
+    tokio::task::spawn_blocking(move || secret_save(id, val))
+        .await
+        .map_err(|e| CmdError::other(e.to_string()))?
+        .map_err(CmdError::other)
 }
 
 #[derive(Clone, Serialize)]
@@ -83,17 +181,65 @@ async fn ssh_open(
     cols: u32,
     rows: u32,
     on_event: Channel<TermEvent>,
-) -> Result<String, String> {
+) -> Result<String, CmdError> {
     let known_hosts = load_known_hosts(&app)?;
-    let connect_cfg = ConnectConfig::from(cfg);
 
-    let session = SshSession::connect(connect_cfg, known_hosts)
-        .await
-        .map_err(|e| e.to_string())?;
-    let (shell, mut rx) = session
-        .open_shell(cols.max(1), rows.max(1))
-        .await
-        .map_err(|e| e.to_string())?;
+    let mut provided_secret: Option<String> = None;
+    let auth = match cfg.auth {
+        SshAuthInput::Password { password } => {
+            let pw = match password.filter(|p| !p.is_empty()) {
+                Some(p) => {
+                    provided_secret = Some(p.clone());
+                    p
+                }
+                None => {
+                    if let Some(sid) = cfg.server_id.as_deref() {
+                        resolve_secret(&state, sid)
+                            .await
+                            .ok_or_else(|| CmdError::auth("需要密码"))?
+                    } else {
+                        return Err(CmdError::auth("需要密码"));
+                    }
+                }
+            };
+            Auth::Password(pw)
+        }
+        SshAuthInput::Key { path, passphrase } => {
+            let resolved_passphrase = match passphrase.filter(|p| !p.is_empty()) {
+                Some(p) => {
+                    provided_secret = Some(p.clone());
+                    Some(p)
+                }
+                None => {
+                    if let Some(sid) = cfg.server_id.as_deref() {
+                        resolve_secret(&state, sid).await
+                    } else {
+                        None
+                    }
+                }
+            };
+            Auth::Key {
+                path,
+                passphrase: resolved_passphrase,
+            }
+        }
+    };
+
+    let connect_cfg = ConnectConfig {
+        host: cfg.host,
+        port: cfg.port,
+        username: cfg.username,
+        auth,
+        accept_host_key: cfg.accept_host_key,
+    };
+
+    let session = SshSession::connect(connect_cfg, known_hosts).await?;
+
+    if let (Some(sid), Some(secret)) = (cfg.server_id.as_ref(), provided_secret) {
+        let _ = persist_secret(&state, sid, &secret).await;
+    }
+
+    let (shell, mut rx) = session.open_shell(cols.max(1), rows.max(1)).await?;
 
     let id = Uuid::new_v4();
     {
@@ -137,19 +283,16 @@ async fn ssh_write(
     state: tauri::State<'_, AppState>,
     id: String,
     data: String,
-) -> Result<(), String> {
-    let uuid = Uuid::parse_str(&id).map_err(|e| format!("无效会话 ID: {e}"))?;
+) -> Result<(), CmdError> {
+    let uuid = Uuid::parse_str(&id).map_err(|e| CmdError::other(format!("无效会话 ID: {e}")))?;
     let shell = {
         let guard = state.sessions.lock().await;
         guard
             .get(&uuid)
             .map(|entry| entry.shell.clone())
-            .ok_or_else(|| "会话不存在或已关闭".to_string())?
+            .ok_or_else(|| CmdError::other("会话不存在或已关闭"))?
     };
-    shell
-        .write(data.into_bytes())
-        .await
-        .map_err(|e| e.to_string())
+    shell.write(data.into_bytes()).await.map_err(CmdError::from)
 }
 
 #[tauri::command]
@@ -158,24 +301,24 @@ async fn ssh_resize(
     id: String,
     cols: u32,
     rows: u32,
-) -> Result<(), String> {
-    let uuid = Uuid::parse_str(&id).map_err(|e| format!("无效会话 ID: {e}"))?;
+) -> Result<(), CmdError> {
+    let uuid = Uuid::parse_str(&id).map_err(|e| CmdError::other(format!("无效会话 ID: {e}")))?;
     let shell = {
         let guard = state.sessions.lock().await;
         guard
             .get(&uuid)
             .map(|entry| entry.shell.clone())
-            .ok_or_else(|| "会话不存在或已关闭".to_string())?
+            .ok_or_else(|| CmdError::other("会话不存在或已关闭"))?
     };
     shell
         .resize(cols.max(1), rows.max(1))
         .await
-        .map_err(|e| e.to_string())
+        .map_err(CmdError::from)
 }
 
 #[tauri::command]
-async fn ssh_close(state: tauri::State<'_, AppState>, id: String) -> Result<(), String> {
-    let uuid = Uuid::parse_str(&id).map_err(|e| format!("无效会话 ID: {e}"))?;
+async fn ssh_close(state: tauri::State<'_, AppState>, id: String) -> Result<(), CmdError> {
+    let uuid = Uuid::parse_str(&id).map_err(|e| CmdError::other(format!("无效会话 ID: {e}")))?;
     let entry = {
         let mut guard = state.sessions.lock().await;
         guard.remove(&uuid)
@@ -185,6 +328,27 @@ async fn ssh_close(state: tauri::State<'_, AppState>, id: String) -> Result<(), 
         let _ = entry.session.close().await;
     }
     Ok(())
+}
+
+#[tauri::command]
+async fn secret_set(
+    state: tauri::State<'_, AppState>,
+    server_id: String,
+    password: String,
+) -> Result<(), CmdError> {
+    persist_secret(&state, &server_id, &password).await
+}
+
+#[tauri::command]
+async fn secret_forget(
+    state: tauri::State<'_, AppState>,
+    server_id: String,
+) -> Result<(), CmdError> {
+    state.secret_cache.lock().await.remove(&server_id);
+    tokio::task::spawn_blocking(move || secret_delete(server_id))
+        .await
+        .map_err(|e| CmdError::other(e.to_string()))?
+        .map_err(CmdError::other)
 }
 
 #[tauri::command]
@@ -235,17 +399,26 @@ async fn ssh_ping(host: String, port: u16) -> Result<u64, String> {
 }
 
 #[tauri::command]
-async fn ssh_test(app: tauri::AppHandle, cfg: SshConnectInput) -> Result<u64, String> {
+async fn ssh_test(app: tauri::AppHandle, cfg: SshConnectInput) -> Result<u64, CmdError> {
     let known_hosts = load_known_hosts(&app)?;
-    let connect_cfg = ConnectConfig::from(cfg);
+    let auth = match cfg.auth {
+        SshAuthInput::Password { password } => Auth::Password(password.unwrap_or_default()),
+        SshAuthInput::Key { path, passphrase } => Auth::Key { path, passphrase },
+    };
+    let connect_cfg = ConnectConfig {
+        host: cfg.host,
+        port: cfg.port,
+        username: cfg.username,
+        auth,
+        accept_host_key: cfg.accept_host_key,
+    };
     let start = Instant::now();
     let session = tokio::time::timeout(
         Duration::from_secs(10),
         SshSession::connect(connect_cfg, known_hosts),
     )
     .await
-    .map_err(|_| "连接超时 (10s)".to_string())?
-    .map_err(|e| e.to_string())?;
+    .map_err(|_| CmdError::connect("连接超时 (10s)"))??;
     let elapsed_ms = start.elapsed().as_millis() as u64;
     let _ = session.close().await;
     Ok(elapsed_ms)
@@ -362,6 +535,8 @@ pub fn run() {
             secret_save,
             secret_get,
             secret_delete,
+            secret_set,
+            secret_forget,
             ssh_ping,
             ssh_test,
             servers_list,

@@ -3,7 +3,13 @@ import { Channel, invoke } from "@tauri-apps/api/core";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebglAddon } from "@xterm/addon-webgl";
-import type { TabStatus, TerminalTab } from "../types";
+import {
+  parseCmdError,
+  type CmdError,
+  type Server,
+  type TabStatus,
+  type TerminalTab,
+} from "../types";
 
 type TermEvent =
   | { event: "data"; data: number[] }
@@ -17,14 +23,19 @@ interface TerminalViewProps {
     tabId: string,
     status: TabStatus,
     sessionId?: string | null,
-    errorMessage?: string
+    errorMessage?: string,
+    errorKind?: CmdError["kind"]
   ) => void;
+  onHostKeyUnknown: (tabId: string, hostPort: string, fingerprint: string) => void;
+  onNeedPassword: (tabId: string, server: Server) => void;
 }
 
 export function TerminalView({
   tab,
   active,
   onStatusChange,
+  onHostKeyUnknown,
+  onNeedPassword,
 }: TerminalViewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -111,7 +122,7 @@ export function TerminalView({
 
     const auth =
       tab.server.auth.type === "password"
-        ? { type: "password", password: tab.password ?? "" }
+        ? { type: "password", password: tab.password ?? null }
         : {
             type: "key",
             path: tab.server.auth.path,
@@ -120,10 +131,12 @@ export function TerminalView({
 
     invoke<string>("ssh_open", {
       cfg: {
+        server_id: tab.server.id,
         host: tab.server.host,
         port: tab.server.port,
         username: tab.server.username,
         auth,
+        accept_host_key: tab.acceptHostKey ?? null,
       },
       cols: term.cols || 80,
       rows: term.rows || 24,
@@ -144,11 +157,28 @@ export function TerminalView({
         }).catch(() => {});
         term.focus();
       })
-      .catch((err) => {
+      .catch((rawErr) => {
         if (cancelled) return;
-        const msg = formatSshError(String(err));
+        const err = parseCmdError(rawErr);
+        if (err.kind === "host_key_unknown" && err.fingerprint) {
+          term.writeln(`\r\n\x1b[33m[等待确认服务器公钥指纹]\x1b[0m`);
+          onStatusChange(tab.tabId, "error", null, err.message, err.kind);
+          onHostKeyUnknown(
+            tab.tabId,
+            `${tab.server.host}:${tab.server.port}`,
+            err.fingerprint
+          );
+          return;
+        }
+        if (err.kind === "auth" && tab.server.auth.type === "password") {
+          term.writeln(`\r\n\x1b[33m[需要输入登录密码]\x1b[0m`);
+          onStatusChange(tab.tabId, "error", null, err.message, err.kind);
+          onNeedPassword(tab.tabId, tab.server);
+          return;
+        }
+        const msg = formatCmdError(err);
         term.writeln(`\r\n\x1b[31m[连接失败] ${msg}\x1b[0m`);
-        onStatusChange(tab.tabId, "error", null, msg);
+        onStatusChange(tab.tabId, "error", null, msg, err.kind);
       });
 
     const observer = new ResizeObserver(() => {
@@ -177,9 +207,9 @@ export function TerminalView({
       }
       term.dispose();
     };
-    // Intentionally run once per tab lifecycle
+    // Intentionally keyed by tabId and connectNonce so status updates do not recreate the session
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab.tabId]);
+  }, [tab.tabId, tab.connectNonce]);
 
   useEffect(() => {
     if (active && fitAddonRef.current && termRef.current) {
@@ -201,8 +231,16 @@ export function TerminalView({
       className={`h-full w-full p-3 ${active ? "flex flex-col" : "hidden"}`}
     >
       {tab.status === "error" && tab.errorMessage && (
-        <div className="mb-2 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-          {tab.errorMessage}
+        <div
+          className={`mb-2 rounded-lg border px-3 py-2 text-xs ${
+            tab.errorKind === "host_key_mismatch"
+              ? "border-red-500/50 bg-red-500/15 text-red-500"
+              : "border-red-500/30 bg-red-500/10 text-red-400"
+          }`}
+        >
+          {tab.errorKind === "host_key_mismatch"
+            ? `${tab.errorMessage}。如确认服务器已重装，请手动编辑或删除应用数据目录下的 known_hosts.json 后重试。`
+            : tab.errorMessage}
         </div>
       )}
       <div ref={containerRef} className="min-h-0 flex-1 overflow-hidden" />
@@ -210,12 +248,12 @@ export function TerminalView({
   );
 }
 
-function formatSshError(raw: string): string {
-  if (raw.includes("host key mismatch")) {
-    return `主机指纹校验失败（可能存在中间人攻击或服务器重装）：${raw}`;
+function formatCmdError(err: CmdError): string {
+  if (err.kind === "host_key_mismatch") {
+    return `${err.message}（预期: ${err.expected ?? "?"}，实际: ${err.fingerprint ?? "?"}）`;
   }
-  if (raw.includes("authentication")) {
-    return `认证失败，请检查用户名、密码或私钥：${raw}`;
+  if (err.kind === "auth") {
+    return `认证失败，请检查用户名、密码或私钥：${err.message}`;
   }
-  return raw;
+  return err.message;
 }

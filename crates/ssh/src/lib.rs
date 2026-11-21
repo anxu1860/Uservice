@@ -310,6 +310,47 @@ impl SshSession {
         Ok((ShellHandle { tx: cmd_tx }, evt_rx))
     }
 
+    pub async fn exec(
+        &self,
+        cmd: &str,
+        timeout: Duration,
+    ) -> Result<(String, Option<u32>), SshError> {
+        let fut = async {
+            let mut channel = self
+                .session
+                .channel_open_session()
+                .await
+                .map_err(|e| SshError::Channel(e.to_string()))?;
+
+            channel
+                .exec(true, cmd)
+                .await
+                .map_err(|e| SshError::Channel(e.to_string()))?;
+
+            let mut out = Vec::new();
+            let mut exit_code = None;
+            while let Some(msg) = channel.wait().await {
+                match msg {
+                    ChannelMsg::Data { data } => {
+                        out.extend_from_slice(&data);
+                    }
+                    ChannelMsg::ExtendedData { .. } => {}
+                    ChannelMsg::ExitStatus { exit_status } => {
+                        exit_code = Some(exit_status);
+                    }
+                    ChannelMsg::Eof | ChannelMsg::Close => break,
+                    _ => {}
+                }
+            }
+
+            Ok::<_, SshError>((String::from_utf8_lossy(&out).into_owned(), exit_code))
+        };
+
+        tokio::time::timeout(timeout, fut).await.map_err(|_| {
+            SshError::Connect(format!("command timed out after {}s", timeout.as_secs()))
+        })?
+    }
+
     pub async fn close(&self) -> Result<(), SshError> {
         self.session
             .disconnect(Disconnect::ByApplication, "", "English")

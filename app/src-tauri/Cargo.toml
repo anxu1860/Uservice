@@ -20,5 +20,6 @@ serde_json = "1"
 tokio = { version = "1", features = ["full"] }
 uuid = { version = "1", features = ["v4"] }
 serverhub-core = { path = "../../crates/core" }
+serverhub-monitor = { path = "../../crates/monitor" }
 serverhub-ssh = { path = "../../crates/ssh" }
 keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }

@@ -4,6 +4,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use serverhub_core::{Server, ServerStore, ssh_config};
+use serverhub_monitor::{PROBE_CMD, RawSnapshot, ServerStats};
 use serverhub_ssh::{
     Auth, ConnectConfig, KnownHostsStore, ShellEvent, ShellHandle, SshError, SshSession,
 };
@@ -19,11 +20,17 @@ struct SessionEntry {
     session: SshSession,
 }
 
+struct MonitorEntry {
+    session: Option<SshSession>,
+    prev: Option<(RawSnapshot, Instant)>,
+}
+
 #[derive(Default)]
 struct AppState {
     sessions: Arc<Mutex<HashMap<Uuid, SessionEntry>>>,
     store_lock: Mutex<()>,
     secret_cache: Mutex<HashMap<String, String>>,
+    monitor_entries: Mutex<HashMap<String, Arc<Mutex<MonitorEntry>>>>,
 }
 
 #[derive(Debug, Serialize)]
@@ -522,6 +529,121 @@ async fn servers_import(
     Ok(added)
 }
 
+#[tauri::command]
+async fn monitor_poll(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, AppState>,
+    cfg: SshConnectInput,
+) -> Result<ServerStats, CmdError> {
+    let server_id = cfg
+        .server_id
+        .clone()
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| CmdError::other("缺少 server_id"))?;
+
+    let entry_arc = {
+        let mut map = state.monitor_entries.lock().await;
+        Arc::clone(map.entry(server_id.clone()).or_insert_with(|| {
+            Arc::new(Mutex::new(MonitorEntry {
+                session: None,
+                prev: None,
+            }))
+        }))
+    };
+
+    let mut entry = entry_arc.lock().await;
+
+    let ping_start = Instant::now();
+    let latency_ms = match tokio::time::timeout(
+        Duration::from_secs(3),
+        tokio::net::TcpStream::connect((cfg.host.as_str(), cfg.port)),
+    )
+    .await
+    {
+        Ok(Ok(_stream)) => Some(ping_start.elapsed().as_secs_f64() * 1000.0),
+        _ => None,
+    };
+
+    if entry.session.is_none() {
+        let known_hosts = load_known_hosts(&app)?;
+        let auth = match cfg.auth {
+            SshAuthInput::Password { password } => {
+                let pw = match password.filter(|p| !p.is_empty()) {
+                    Some(p) => p,
+                    None => resolve_secret(&state, &server_id)
+                        .await
+                        .ok_or_else(|| CmdError::auth("需要密码"))?,
+                };
+                Auth::Password(pw)
+            }
+            SshAuthInput::Key { path, passphrase } => {
+                let resolved = match passphrase.filter(|p| !p.is_empty()) {
+                    Some(p) => Some(p),
+                    None => resolve_secret(&state, &server_id).await,
+                };
+                Auth::Key {
+                    path,
+                    passphrase: resolved,
+                }
+            }
+        };
+
+        let connect_cfg = ConnectConfig {
+            host: cfg.host,
+            port: cfg.port,
+            username: cfg.username,
+            auth,
+            accept_host_key: cfg.accept_host_key,
+        };
+        let session = SshSession::connect(connect_cfg, known_hosts).await?;
+        entry.session = Some(session);
+    }
+
+    let output = {
+        let session = entry.session.as_ref().expect("session just initialized");
+        match session.exec(PROBE_CMD, Duration::from_secs(8)).await {
+            Ok((out, _code)) => out,
+            Err(e) => {
+                if let Some(s) = entry.session.take() {
+                    let _ = s.close().await;
+                }
+                entry.prev = None;
+                return Err(CmdError::connect(e.to_string()));
+            }
+        }
+    };
+
+    let cur = RawSnapshot::parse(&output).map_err(|e| CmdError::other(e.to_string()))?;
+    let now = Instant::now();
+    let stats = match entry.prev.as_ref() {
+        Some((prev_snap, prev_at)) => ServerStats::compute(
+            Some(prev_snap),
+            &cur,
+            now.duration_since(*prev_at).as_secs_f64(),
+            latency_ms,
+        ),
+        None => ServerStats::compute(None, &cur, 0.0, latency_ms),
+    };
+    entry.prev = Some((cur, now));
+    Ok(stats)
+}
+
+#[tauri::command]
+async fn monitor_stop(
+    state: tauri::State<'_, AppState>,
+    server_id: String,
+) -> Result<(), CmdError> {
+    let entry_arc = state.monitor_entries.lock().await.remove(&server_id);
+    if let Some(arc) = entry_arc {
+        let mut entry = arc.lock().await;
+        entry.prev = None;
+        if let Some(session) = entry.session.take() {
+            let _ = session.close().await;
+        }
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -543,7 +665,9 @@ pub fn run() {
             servers_upsert,
             servers_delete,
             ssh_config_preview,
-            servers_import
+            servers_import,
+            monitor_poll,
+            monitor_stop
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

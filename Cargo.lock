@@ -4212,6 +4212,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serverhub-core",
+ "serverhub-monitor",
  "serverhub-ssh",
  "tauri",
  "tauri-build",
@@ -4233,6 +4234,10 @@ dependencies = [
 [[package]]
 name = "serverhub-monitor"
 version = "0.1.0"
+dependencies = [
+ "serde",
+ "thiserror 2.0.21",
+]
 
 [[package]]
 name = "serverhub-ssh"

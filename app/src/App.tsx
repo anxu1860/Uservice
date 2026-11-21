@@ -2,15 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import {
   FileInput,
+  LayoutDashboard,
   Pencil,
   Plus,
   Search,
   Server as ServerIcon,
   ShieldCheck,
-  Terminal as TerminalIcon,
   Trash2,
   X,
 } from "lucide-react";
+import { Dashboard } from "./components/Dashboard";
 import { HostKeyModal } from "./components/HostKeyModal";
 import { ImportSshConfigModal } from "./components/ImportSshConfigModal";
 import { PromptSecretModal } from "./components/PromptSecretModal";
@@ -24,7 +25,7 @@ export function App() {
   const [servers, setServers] = useState<Server[]>([]);
   const [search, setSearch] = useState("");
   const [tabs, setTabs] = useState<TerminalTab[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string | null>(null);
+  const [activeTabId, setActiveTabId] = useState<string>("overview");
   const [formOpen, setFormOpen] = useState(false);
   const [editingServer, setEditingServer] = useState<Server | null>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -33,10 +34,14 @@ export function App() {
     server: Server;
   } | null>(null);
   const [pendingHostKey, setPendingHostKey] = useState<{
-    tabId: string;
+    tabId: string | null;
     hostPort: string;
     fingerprint: string;
   } | null>(null);
+  const [acceptedHostKeys, setAcceptedHostKeys] = useState<
+    Record<string, string>
+  >({});
+  const [dashboardPollTrigger, setDashboardPollTrigger] = useState(0);
   const [latency, setLatency] = useState<
     Record<string, number | "timeout" | "pending">
   >({});
@@ -180,7 +185,7 @@ export function App() {
       const next = prev.filter((t) => t.tabId !== tabId);
       if (activeTabId === tabId) {
         const fallback = next[Math.min(idx, next.length - 1)];
-        setActiveTabId(fallback ? fallback.tabId : null);
+        setActiveTabId(fallback ? fallback.tabId : "overview");
       }
       return next;
     });
@@ -188,6 +193,7 @@ export function App() {
 
   const deleteServer = async (srv: Server) => {
     if (!window.confirm(`确定删除服务器「${srv.name}」吗？`)) return;
+    await invoke("monitor_stop", { serverId: srv.id }).catch(() => {});
     await invoke("servers_delete", { id: srv.id }).catch(console.error);
     await invoke("secret_forget", { serverId: srv.id }).catch(() => {});
     await refreshServers();
@@ -222,6 +228,19 @@ export function App() {
           >
             <Plus className="h-3.5 w-3.5" />
             <span>添加</span>
+          </button>
+        </div>
+
+        {/* Overview Entry */}
+        <div className="px-2 pb-2">
+          <button
+            type="button"
+            data-active={activeTabId === "overview"}
+            onClick={() => setActiveTabId("overview")}
+            className="sidebar-item flex w-full items-center gap-2 px-2.5 py-1.5 text-xs font-medium transition"
+          >
+            <LayoutDashboard className="h-3.5 w-3.5 text-blue-500" />
+            <span>概览</span>
           </button>
         </div>
 
@@ -348,97 +367,107 @@ export function App() {
           className="flex h-[38px] shrink-0 items-center gap-1 border-b px-3"
           style={{ borderColor: "var(--separator)" }}
         >
-          {tabs.length === 0 ? (
-            <span
-              data-tauri-drag-region
-              className="text-xs font-medium opacity-55"
+          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
+            <div
+              onClick={() => setActiveTabId("overview")}
+              className={`flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition ${
+                activeTabId === "overview"
+                  ? "font-medium shadow-xs"
+                  : "opacity-70 hover:opacity-100"
+              }`}
+              style={
+                activeTabId === "overview"
+                  ? { background: "var(--selected)" }
+                  : undefined
+              }
             >
-              ServerHub
-            </span>
-          ) : (
-            <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto">
-              {tabs.map((tab) => {
-                const isActive = tab.tabId === activeTabId;
-                const dotColor =
-                  tab.status === "connected"
-                    ? "bg-emerald-500"
-                    : tab.status === "connecting"
+              <LayoutDashboard className="h-3.5 w-3.5 text-blue-500" />
+              <span>概览</span>
+            </div>
+            {tabs.map((tab) => {
+              const isActive = tab.tabId === activeTabId;
+              const dotColor =
+                tab.status === "connected"
+                  ? "bg-emerald-500"
+                  : tab.status === "connecting"
                     ? "bg-amber-400 animate-pulse"
                     : tab.status === "error"
-                    ? "bg-red-500"
-                    : "bg-zinc-400";
-                return (
-                  <div
-                    key={tab.tabId}
-                    onClick={() => setActiveTabId(tab.tabId)}
-                    className={`flex max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-md px-2.5 py-1 text-xs transition ${
-                      isActive ? "font-medium shadow-xs" : "opacity-70 hover:opacity-100"
-                    }`}
-                    style={
-                      isActive ? { background: "var(--selected)" } : undefined
-                    }
+                      ? "bg-red-500"
+                      : "bg-zinc-400";
+              return (
+                <div
+                  key={tab.tabId}
+                  onClick={() => setActiveTabId(tab.tabId)}
+                  className={`flex max-w-[180px] shrink-0 cursor-pointer items-center gap-2 rounded-md px-2.5 py-1 text-xs transition ${
+                    isActive
+                      ? "font-medium shadow-xs"
+                      : "opacity-70 hover:opacity-100"
+                  }`}
+                  style={
+                    isActive ? { background: "var(--selected)" } : undefined
+                  }
+                >
+                  <span
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotColor}`}
+                  />
+                  <span className="truncate">{tab.server.name}</span>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeTab(tab.tabId);
+                    }}
+                    className="rounded p-0.5 opacity-60 hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
                   >
-                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotColor}`} />
-                    <span className="truncate">{tab.server.name}</span>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        closeTab(tab.tabId);
-                      }}
-                      className="rounded p-0.5 opacity-60 hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </header>
 
-        {/* Terminal / Empty State Area */}
+        {/* Dashboard + Terminal Area */}
         <div className="relative min-h-0 flex-1">
-          {tabs.length === 0 ? (
-            <div className="flex h-full items-center justify-center p-8">
-              <div className="card max-w-md p-7 text-center">
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-500">
-                  <TerminalIcon className="h-6 w-6" />
-                </div>
-                <h1 className="mb-2 text-lg font-semibold">欢迎使用 ServerHub</h1>
-                <p className="mb-5 text-xs leading-relaxed opacity-70">
-                  添加你的第一台 Linux 服务器，或在左侧边栏点击已有服务器即可开启交互式
-                  SSH 终端。
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingServer(null);
-                    setFormOpen(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500 px-4 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-blue-600"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span>添加服务器</span>
-                </button>
-              </div>
-            </div>
-          ) : (
-            tabs.map((tab) => (
-              <TerminalView
-                key={`${tab.tabId}-${tab.connectNonce}`}
-                tab={tab}
-                active={tab.tabId === activeTabId}
-                onStatusChange={handleStatusChange}
-                onHostKeyUnknown={(tabId, hostPort, fingerprint) => {
-                  setPendingHostKey({ tabId, hostPort, fingerprint });
-                }}
-                onNeedPassword={(tabId, server) => {
-                  setPendingPassword({ tabId, server });
-                }}
-              />
-            ))
-          )}
+          <div
+            className={
+              activeTabId === "overview" ? "h-full w-full" : "hidden"
+            }
+          >
+            <Dashboard
+              servers={servers}
+              visible={activeTabId === "overview"}
+              acceptedHostKeys={acceptedHostKeys}
+              pollTrigger={dashboardPollTrigger}
+              onOpenTerminal={handleConnectClick}
+              onAddServer={() => {
+                setEditingServer(null);
+                setFormOpen(true);
+              }}
+              onNeedPassword={(server) => {
+                setPendingPassword({ tabId: null, server });
+              }}
+              onHostKeyUnknown={(hostPort, fingerprint) => {
+                setPendingHostKey((prev) =>
+                  prev ?? { tabId: null, hostPort, fingerprint }
+                );
+              }}
+            />
+          </div>
+          {tabs.map((tab) => (
+            <TerminalView
+              key={`${tab.tabId}-${tab.connectNonce}`}
+              tab={tab}
+              active={tab.tabId === activeTabId}
+              onStatusChange={handleStatusChange}
+              onHostKeyUnknown={(tabId, hostPort, fingerprint) => {
+                setPendingHostKey({ tabId, hostPort, fingerprint });
+              }}
+              onNeedPassword={(tabId, server) => {
+                setPendingPassword({ tabId, server });
+              }}
+            />
+          ))}
         </div>
       </main>
 
@@ -476,27 +505,35 @@ export function App() {
           const item = pendingHostKey;
           setPendingHostKey(null);
           if (!item) return;
-          setTabs((prev) =>
-            prev.map((t) =>
-              t.tabId === item.tabId
-                ? {
-                    ...t,
-                    acceptHostKey: fingerprint,
-                    status: "connecting",
-                    errorMessage: undefined,
-                    errorKind: undefined,
-                    connectNonce: t.connectNonce + 1,
-                  }
-                : t
-            )
-          );
+          setAcceptedHostKeys((prev) => ({
+            ...prev,
+            [item.hostPort]: fingerprint,
+          }));
+          if (item.tabId) {
+            setTabs((prev) =>
+              prev.map((t) =>
+                t.tabId === item.tabId
+                  ? {
+                      ...t,
+                      acceptHostKey: fingerprint,
+                      status: "connecting",
+                      errorMessage: undefined,
+                      errorKind: undefined,
+                      connectNonce: t.connectNonce + 1,
+                    }
+                  : t
+              )
+            );
+          } else {
+            setDashboardPollTrigger((n) => n + 1);
+          }
         }}
       />
 
       <PromptSecretModal
         server={pendingPassword?.server ?? null}
         onCancel={() => setPendingPassword(null)}
-        onConfirm={(password) => {
+        onConfirm={async (password) => {
           const pending = pendingPassword;
           setPendingPassword(null);
           if (!pending) return;
@@ -516,7 +553,11 @@ export function App() {
               )
             );
           } else {
-            openTab(pending.server, password);
+            await invoke("secret_set", {
+              serverId: pending.server.id,
+              password,
+            }).catch(console.error);
+            setDashboardPollTrigger((n) => n + 1);
           }
         }}
       />

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import {
   Plus,
   Search,
@@ -34,6 +35,9 @@ export function App() {
   const [addOpen, setAddOpen] = useState(false);
   const [pendingPasswordServer, setPendingPasswordServer] =
     useState<Server | null>(null);
+  const [latency, setLatency] = useState<
+    Record<string, number | "timeout" | "pending">
+  >({});
 
   useEffect(() => {
     try {
@@ -41,6 +45,37 @@ export function App() {
     } catch {
       // Ignore storage quota errors
     }
+  }, [servers]);
+
+  useEffect(() => {
+    if (servers.length === 0) return;
+    let cancelled = false;
+
+    const pingAll = () => {
+      for (const srv of servers) {
+        setLatency((prev) =>
+          prev[srv.id] === undefined ? { ...prev, [srv.id]: "pending" } : prev
+        );
+        invoke<number>("ssh_ping", { host: srv.host, port: srv.port })
+          .then((ms) => {
+            if (!cancelled) {
+              setLatency((prev) => ({ ...prev, [srv.id]: ms }));
+            }
+          })
+          .catch(() => {
+            if (!cancelled) {
+              setLatency((prev) => ({ ...prev, [srv.id]: "timeout" }));
+            }
+          });
+      }
+    };
+
+    pingAll();
+    const timer = window.setInterval(pingAll, 30000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, [servers]);
 
   const filteredServers = useMemo(() => {
@@ -65,24 +100,35 @@ export function App() {
     return Array.from(groups.entries());
   }, [filteredServers]);
 
-  const openTab = useCallback((server: Server, password?: string) => {
-    const tabId = crypto.randomUUID();
-    const newTab: TerminalTab = {
-      tabId,
-      server,
-      sessionId: null,
-      status: "connecting",
-      password,
-    };
-    setTabs((prev) => [...prev, newTab]);
-    setActiveTabId(tabId);
-  }, []);
+  const openTab = useCallback(
+    (server: Server, password?: string, passphrase?: string) => {
+      const tabId = crypto.randomUUID();
+      const newTab: TerminalTab = {
+        tabId,
+        server,
+        sessionId: null,
+        status: "connecting",
+        password,
+        passphrase,
+      };
+      setTabs((prev) => [...prev, newTab]);
+      setActiveTabId(tabId);
+    },
+    []
+  );
 
-  const handleConnectClick = (server: Server) => {
+  const handleConnectClick = async (server: Server) => {
+    const secret = await invoke<string | null>("secret_get", {
+      id: server.id,
+    }).catch(() => null);
     if (server.auth.type === "password") {
-      setPendingPasswordServer(server);
+      if (secret !== null && secret !== "") {
+        openTab(server, secret);
+      } else {
+        setPendingPasswordServer(server);
+      }
     } else {
-      openTab(server);
+      openTab(server, undefined, secret ?? undefined);
     }
   };
 
@@ -102,6 +148,7 @@ export function App() {
                 sessionId: sessionId !== undefined ? sessionId : t.sessionId,
                 errorMessage,
                 password: status === "connected" ? undefined : t.password,
+                passphrase: status === "connected" ? undefined : t.passphrase,
               }
             : t
         )
@@ -124,25 +171,23 @@ export function App() {
 
   const deleteServer = (id: string) => {
     setServers((prev) => prev.filter((s) => s.id !== id));
+    invoke("secret_delete", { id }).catch(() => {});
   };
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-transparent">
       {/* Left Vibrancy Sidebar */}
-      <aside
-        className="flex h-full w-64 shrink-0 flex-col border-r"
-        style={{ borderColor: "var(--border-subtle)" }}
-      >
+      <aside className="sidebar flex h-full w-64 shrink-0 flex-col">
         {/* Top drag region leaving ~80px for macOS traffic lights */}
         <div
           data-tauri-drag-region
-          className="flex h-[38px] shrink-0 items-center justify-end pr-3 pl-20"
+          className="mac-traffic-pad flex h-[38px] shrink-0 items-center justify-end pr-3 pl-3"
         >
           <button
             type="button"
             onClick={() => setAddOpen(true)}
             title="添加服务器"
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium opacity-80 transition hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10"
+            className="sidebar-item flex items-center gap-1 px-2 py-1 text-xs font-medium opacity-80 transition hover:opacity-100"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>添加</span>
@@ -154,8 +199,8 @@ export function App() {
           <div
             className="flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs"
             style={{
-              borderColor: "var(--border-subtle)",
-              background: "var(--surface-hover)",
+              borderColor: "var(--separator)",
+              background: "var(--hover)",
             }}
           >
             <Search className="h-3.5 w-3.5 opacity-55" />
@@ -182,36 +227,61 @@ export function App() {
                   {groupName}
                 </div>
                 <div className="space-y-0.5">
-                  {items.map((server) => (
-                    <div
-                      key={server.id}
-                      onClick={() => handleConnectClick(server)}
-                      className="group flex cursor-pointer items-center justify-between rounded-lg px-2.5 py-2 transition hover:bg-black/5 dark:hover:bg-white/10"
-                    >
-                      <div className="flex min-w-0 items-center gap-2.5">
-                        <ServerIcon className="h-4 w-4 shrink-0 text-blue-500" />
-                        <div className="min-w-0">
-                          <div className="truncate text-xs font-medium">
-                            {server.name}
-                          </div>
-                          <div className="truncate font-mono text-[11px] opacity-60">
-                            {server.username}@{server.host}:{server.port}
+                  {items.map((server) => {
+                    const ping = latency[server.id];
+                    return (
+                      <div
+                        key={server.id}
+                        onClick={() => handleConnectClick(server)}
+                        className="sidebar-item group flex cursor-pointer items-center justify-between gap-1.5 px-2.5 py-2 transition"
+                      >
+                        <div className="flex min-w-0 items-center gap-2.5">
+                          <ServerIcon className="h-4 w-4 shrink-0 text-blue-500" />
+                          <div className="min-w-0">
+                            <div className="truncate text-xs font-medium">
+                              {server.name}
+                            </div>
+                            <div className="truncate font-mono text-[11px] opacity-60">
+                              {server.username}@{server.host}:{server.port}
+                            </div>
                           </div>
                         </div>
+                        <div className="flex shrink-0 items-center gap-1">
+                          {typeof ping === "number" ? (
+                            <span className="inline-flex items-center gap-1 font-mono text-[10px] opacity-70">
+                              <span
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  ping < 100
+                                    ? "bg-emerald-500"
+                                    : ping < 300
+                                    ? "bg-amber-400"
+                                    : "bg-red-500"
+                                }`}
+                              />
+                              {ping} ms
+                            </span>
+                          ) : ping === "timeout" ? (
+                            <span className="text-[10px] text-red-500/80">
+                              超时
+                            </span>
+                          ) : ping === "pending" ? (
+                            <span className="text-[10px] opacity-45">…</span>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteServer(server.id);
+                            }}
+                            title="删除"
+                            className="rounded p-1 opacity-0 transition group-hover:opacity-60 hover:!opacity-100 hover:text-red-500"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteServer(server.id);
-                        }}
-                        title="删除"
-                        className="rounded p-1 opacity-0 transition group-hover:opacity-60 hover:!opacity-100 hover:text-red-500"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ))
@@ -220,20 +290,20 @@ export function App() {
 
         <div
           className="flex items-center gap-1.5 border-t px-3 py-2 text-[11px] opacity-60"
-          style={{ borderColor: "var(--border-subtle)" }}
+          style={{ borderColor: "var(--separator)" }}
         >
           <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
           <span>TOFU 主机指纹校验已启用</span>
         </div>
       </aside>
 
-      {/* Main Frosted Glass Content */}
-      <main className="main-glass flex min-w-0 flex-1 flex-col">
+      {/* Main Content */}
+      <main className="content flex min-w-0 flex-1 flex-col">
         {/* Top Tab Bar + Drag Region */}
         <header
           data-tauri-drag-region
           className="flex h-[38px] shrink-0 items-center gap-1 border-b px-3"
-          style={{ borderColor: "var(--border-subtle)" }}
+          style={{ borderColor: "var(--separator)" }}
         >
           {tabs.length === 0 ? (
             <span
@@ -262,7 +332,7 @@ export function App() {
                       isActive ? "font-medium shadow-xs" : "opacity-70 hover:opacity-100"
                     }`}
                     style={
-                      isActive ? { background: "var(--surface-active)" } : undefined
+                      isActive ? { background: "var(--selected)" } : undefined
                     }
                   >
                     <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${dotColor}`} />
@@ -288,10 +358,7 @@ export function App() {
         <div className="relative min-h-0 flex-1">
           {tabs.length === 0 ? (
             <div className="flex h-full items-center justify-center p-8">
-              <div
-                className="card-glass max-w-md rounded-2xl border p-7 text-center shadow-lg"
-                style={{ borderColor: "var(--border-subtle)" }}
-              >
+              <div className="card max-w-md p-7 text-center">
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/15 text-blue-500">
                   <TerminalIcon className="h-6 w-6" />
                 </div>
@@ -326,7 +393,14 @@ export function App() {
       <AddServerModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        onAdd={(server) => setServers((prev) => [server, ...prev])}
+        onAdd={async (server, secret) => {
+          setServers((prev) => [server, ...prev]);
+          if (secret) {
+            await invoke("secret_save", { id: server.id, secret }).catch(
+              console.error
+            );
+          }
+        }}
       />
 
       <PromptSecretModal
@@ -335,7 +409,12 @@ export function App() {
         onConfirm={(password) => {
           const srv = pendingPasswordServer;
           setPendingPasswordServer(null);
-          if (srv) openTab(srv, password);
+          if (srv) {
+            invoke("secret_save", { id: srv.id, secret: password }).catch(
+              console.error
+            );
+            openTab(srv, password);
+          }
         }}
       />
     </div>

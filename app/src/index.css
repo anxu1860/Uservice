@@ -3,24 +3,30 @@
 
 :root {
   color-scheme: light dark;
-  --surface-main: rgba(248, 249, 252, 0.68);
-  --surface-card: rgba(255, 255, 255, 0.62);
-  --surface-hover: rgba(0, 0, 0, 0.06);
-  --surface-active: rgba(0, 122, 255, 0.14);
-  --border-subtle: rgba(0, 0, 0, 0.08);
-  --text-primary: rgba(20, 20, 24, 0.92);
-  --text-secondary: rgba(60, 60, 68, 0.68);
+  --content-bg: #ffffff;
+  --card-bg: #f5f5f7;
+  --popover-bg: #f6f6f6;
+  --separator: rgba(0, 0, 0, 0.1);
+  --hover: rgba(0, 0, 0, 0.05);
+  --selected: rgba(0, 0, 0, 0.08);
+  --text: rgba(0, 0, 0, 0.85);
+  --text-2: rgba(0, 0, 0, 0.5);
+  --accent: #007aff;
+  --sidebar-solid: #ececec;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --surface-main: rgba(24, 24, 28, 0.62);
-    --surface-card: rgba(38, 38, 44, 0.56);
-    --surface-hover: rgba(255, 255, 255, 0.08);
-    --surface-active: rgba(10, 132, 255, 0.24);
-    --border-subtle: rgba(255, 255, 255, 0.1);
-    --text-primary: rgba(245, 245, 248, 0.94);
-    --text-secondary: rgba(200, 200, 210, 0.62);
+    --content-bg: #1e1e1e;
+    --card-bg: #262626;
+    --popover-bg: #2a2a2a;
+    --separator: rgba(255, 255, 255, 0.09);
+    --hover: rgba(255, 255, 255, 0.06);
+    --selected: rgba(255, 255, 255, 0.1);
+    --text: rgba(255, 255, 255, 0.88);
+    --text-2: rgba(255, 255, 255, 0.5);
+    --accent: #0a84ff;
+    --sidebar-solid: #252525;
   }
 }
 
@@ -32,25 +38,52 @@ body,
   padding: 0;
   overflow: hidden;
   background: transparent;
-  color: var(--text-primary);
+  color: var(--text);
+  font-size: 13px;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI",
     system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
 
-.main-glass {
-  background: var(--surface-main);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+.sidebar {
+  background: transparent;
 }
 
-.card-glass {
-  background: var(--surface-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+html[data-platform="linux"] .sidebar {
+  background: var(--sidebar-solid);
 }
 
-.xterm-viewport {
-  background-color: transparent !important;
+html[data-platform="mac"] .mac-traffic-pad {
+  padding-left: 5rem;
+}
+
+.content {
+  background: var(--content-bg);
+  border-left: 1px solid var(--separator);
+}
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--separator);
+  border-radius: 10px;
+}
+
+.popover {
+  background: var(--popover-bg);
+  border: 1px solid var(--separator);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+}
+
+.sidebar-item {
+  border-radius: 6px;
+}
+
+.sidebar-item:hover {
+  background: var(--hover);
+}
+
+.sidebar-item[data-active="true"] {
+  background: var(--selected);
 }

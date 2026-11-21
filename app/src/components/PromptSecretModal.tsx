@@ -25,11 +25,8 @@ export function PromptSecretModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm">
-      <div
-        className="card-glass w-full max-w-sm rounded-2xl border p-5 shadow-2xl"
-        style={{ borderColor: "var(--border-subtle)" }}
-      >
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 p-4">
+      <div className="popover w-full max-w-sm p-5">
         <div className="mb-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <KeyRound className="h-4 w-4 text-blue-500" />
@@ -63,7 +60,7 @@ export function PromptSecretModal({
             onChange={(e) => setPassword(e.target.value)}
             placeholder="SSH 密码"
             className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none focus:border-blue-500"
-            style={{ borderColor: "var(--border-subtle)" }}
+            style={{ borderColor: "var(--separator)" }}
           />
           <div className="flex justify-end gap-2">
             <button
@@ -73,7 +70,7 @@ export function PromptSecretModal({
                 onCancel();
               }}
               className="rounded-lg border px-3 py-1.5 text-xs font-medium opacity-80"
-              style={{ borderColor: "var(--border-subtle)" }}
+              style={{ borderColor: "var(--separator)" }}
             >
               取消
             </button>

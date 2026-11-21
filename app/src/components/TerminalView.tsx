@@ -36,28 +36,34 @@ export function TerminalView({
     if (!container) return;
 
     let cancelled = false;
-    const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-
-    const term = new Terminal({
-      allowTransparency: true,
-      cursorBlink: true,
-      fontFamily: '"SF Mono", Menlo, Monaco, "Cascadia Mono", monospace',
-      fontSize: 13,
-      lineHeight: 1.35,
-      theme: isDark
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const getTheme = (dark: boolean) =>
+      dark
         ? {
-            background: "#00000000",
+            background: "#1e1e1e",
             foreground: "#f2f2f7",
             cursor: "#0a84ff",
             selectionBackground: "rgba(10, 132, 255, 0.35)",
           }
         : {
-            background: "#00000000",
+            background: "#ffffff",
             foreground: "#1c1c1e",
             cursor: "#007aff",
             selectionBackground: "rgba(0, 122, 255, 0.25)",
-          },
+          };
+
+    const term = new Terminal({
+      cursorBlink: true,
+      fontFamily: '"SF Mono", Menlo, Monaco, "Cascadia Mono", monospace',
+      fontSize: 13,
+      lineHeight: 1.35,
+      theme: getTheme(mediaQuery.matches),
     });
+
+    const onThemeChange = (e: MediaQueryListEvent) => {
+      term.options.theme = getTheme(e.matches);
+    };
+    mediaQuery.addEventListener("change", onThemeChange);
 
     const fitAddon = new FitAddon();
     term.loadAddon(fitAddon);
@@ -161,6 +167,7 @@ export function TerminalView({
 
     return () => {
       cancelled = true;
+      mediaQuery.removeEventListener("change", onThemeChange);
       observer.disconnect();
       dataDisposable.dispose();
       const sid = sessionIdRef.current;

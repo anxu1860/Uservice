@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  publish-macos:
+    name: Build macOS (${{ matrix.arch }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: Apple Silicon (aarch64)
+            target: aarch64-apple-darwin
+          - arch: Intel (x86_64)
+            target: x86_64-apple-darwin
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+
+      - name: Install frontend dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and upload DMG to GitHub Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          tagName: ${{ github.ref_name }}
+          releaseName: "Uservice ${{ github.ref_name }}"
+          releaseBody: |
+            ## Uservice ${{ github.ref_name }}
+
+            Cross-platform server management client for SSH, VNC & RDP, featuring an AI terminal assistant, built-in MCP server, and E2E encrypted sync.
+
+            ### macOS Downloads
+            - **Apple Silicon (M1 / M2 / M3 / M4)**: `Uservice_*_aarch64.dmg`
+            - **Intel (x86_64)**: `Uservice_*_x64.dmg`
+
+            > **macOS Gatekeeper Notice**: This open-source build is currently not Apple-notarized. If macOS blocks the app on first launch, allow it in **System Settings → Privacy & Security**, or run:
+            > ```bash
+            > xattr -cr /Applications/Uservice.app
+            > ```
+          releaseDraft: false
+          prerelease: false
+          args: --target ${{ matrix.target }} --bundles dmg

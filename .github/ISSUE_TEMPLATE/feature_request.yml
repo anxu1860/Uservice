@@ -1,0 +1,60 @@
+name: Feature Request / 功能建议
+description: Propose a new feature or improvement for Uservice / 提出新功能或体验改进建议
+title: "[Feat]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea that makes **Uservice** better? Describe the use case clearly so we can evaluate scope and design.
+        欢迎提出清晰、具体的功能建议，帮助我们合理规划迭代方向。
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area / 涉及模块
+      options:
+        - SSH Terminal
+        - VNC / RDP
+        - AI Assistant
+        - MCP Server
+        - Multi-Cloud Sync
+        - Vault & Security
+        - UI / Appearance
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Use Case & Motivation / 使用场景与痛点
+      description: What problem does this solve? Why is the current workflow insufficient?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution / 期望方案
+      description: Describe the behavior, UI interaction, or API you envision.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered / 备选方案（可选）
+      description: Any alternative approaches or workarounds you have considered.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist / 确认项
+      options:
+        - label: I searched existing issues to confirm this request does not already exist. / 我已检索现有 Issue，确认无重复建议。
+          required: true
+        - label: I am willing to submit a PR to help implement this feature. / 我愿意参与提交 PR 实现此功能。
+          required: false

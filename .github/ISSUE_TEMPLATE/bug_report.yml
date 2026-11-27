@@ -1,0 +1,97 @@
+name: Bug Report / 缺陷反馈
+description: Report a reproducible bug in Uservice / 提交可复现的问题反馈
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for helping improve **Uservice**! Please fill out the fields below concisely so maintainers can triage and reproduce the issue quickly.
+        感谢反馈问题！请尽量填写完整信息以便维护者快速定位与复现。
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected Area / 涉及模块
+      description: Which part of Uservice is affected?
+      options:
+        - SSH Terminal
+        - VNC / RDP
+        - AI Assistant
+        - MCP Server
+        - Multi-Cloud Sync
+        - Vault & Security
+        - UI / Appearance
+        - Build / Packaging
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System / 系统与架构
+      options:
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Windows (x64)
+        - Windows (ARM64)
+        - Linux (x64)
+        - Linux (ARM64)
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version or Commit / 版本号或 Commit
+      description: App version (e.g. v0.1.0) or git commit SHA.
+      placeholder: "v0.1.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Problem Description / 问题描述
+      description: A clear and concise description of what went wrong.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce / 复现步骤
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs. Actual Behavior / 预期与实际结果
+      description: What did you expect to happen, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized Logs or Screenshots / 脱敏后的日志或截图（可选）
+      description: Paste error messages or drag screenshots here. Never include passwords, private keys, API tokens, or real server IPs.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist / 提交前确认
+      options:
+        - label: I searched existing issues to confirm this is not a duplicate. / 我已检索现有 Issue，确认未重复提交。
+          required: true
+        - label: I removed all sensitive data (passwords, keys, tokens, real IPs) from my report. / 我已移除密码、私钥、Token 与真实 IP 等敏感信息。
+          required: true

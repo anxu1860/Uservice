@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability / 安全漏洞报告
+    url: https://github.com/anxu1860/Uservice/security/policy
+    about: Please report security vulnerabilities privately rather than opening a public issue. / 请勿公开披露安全漏洞，请按安全策略私密上报。
+  - name: Discussions / 使用问答与交流
+    url: https://github.com/anxu1860/Uservice/discussions
+    about: Ask questions, share configurations, or discuss ideas with the community. / 使用疑问、配置分享或开放讨论请前往 Discussions。

@@ -14,7 +14,7 @@
 
   <p>
     <a href="https://github.com/anxu1860/Uservice/actions/workflows/ci.yml"><img src="https://github.com/anxu1860/Uservice/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-    <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache--2.0-blue.svg" alt="License"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License"></a>
     <img src="https://img.shields.io/badge/Tauri-2.x-24C8DB?logo=tauri&logoColor=white" alt="Tauri 2">
     <img src="https://img.shields.io/badge/Rust-1.88%2B-000000?logo=rust&logoColor=white" alt="Rust">
     <img src="https://img.shields.io/badge/Platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" alt="Platforms">
@@ -108,4 +108,4 @@ cd app && pnpm build
 
 ## License
 
-本项目采用 [Apache-2.0](LICENSE) 开源协议。
+本项目采用 [GNU AGPL-3.0](LICENSE) 开源协议。任何基于本项目的修改、二次分发或网络服务部署均须以相同协议公开完整源代码；未经授权请勿使用 `Uservice` 名称与 Logo 进行商业包装或上架分发。

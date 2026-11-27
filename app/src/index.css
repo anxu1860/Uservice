@@ -5,10 +5,17 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Geist Variable", "Geist", "Inter", -apple-system, BlinkMacSystemFont,
-    "SF Pro Text", "PingFang SC", "Hiragino Sans GB", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", "SF Mono", Menlo,
-    Monaco, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    "PingFang SC", "Hiragino Sans GB", "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, "Cascadia Mono",
+    monospace;
+  /* Typography Tracking Scale (calibrated for SF Pro + PingFang SC) */
+  --tracking-tighter: -0.03em;
+  --tracking-display: -0.02em;
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0em;
+  --tracking-wide: 0.025em;
+  --tracking-wider: 0.05em;
   --color-background: hsl(var(--hu-background));
   --color-foreground: hsl(var(--hu-foreground));
   --color-card: hsl(var(--hu-card));
@@ -33,73 +40,84 @@
 :root {
   color-scheme: light;
   --content-bg: #ffffff;
-  --card-bg: #f5f5f7;
-  --popover-bg: #f6f6f6;
-  --separator: rgba(0, 0, 0, 0.1);
-  --hover: rgba(0, 0, 0, 0.05);
-  --selected: rgba(0, 0, 0, 0.08);
-  --text: rgba(0, 0, 0, 0.85);
-  --text-2: rgba(0, 0, 0, 0.5);
+  --card-bg: #f8f8f8;
+  --popover-bg: #ffffff;
+  --separator: rgba(0, 0, 0, 0.08);
+  --hover: rgba(0, 0, 0, 0.04);
+  --selected: rgba(0, 0, 0, 0.07);
+  --text: #1a1a1a;
+  --text-2: rgba(0, 0, 0, 0.55);
   --accent: #007aff;
-  --sidebar-solid: #ececec;
-  --font-geist: "Geist Variable", "Geist", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-jetbrains-mono: "JetBrains Mono Variable", "JetBrains Mono", "SF Mono", Menlo, monospace;
-  --hu-font-geist: var(--font-geist);
-  --hu-font-jetbrains: var(--font-jetbrains-mono);
+  --sidebar-solid: #f3f3f3;
+  --font-geist: var(--font-sans);
+  --font-jetbrains-mono: var(--font-mono);
+  --hu-font-geist: var(--font-sans);
+  --hu-font-jetbrains: var(--font-mono);
   --radius: 12px;
   --card-radius: 22px;
-  --hu-background: 240, 24%, 96%;
-  --hu-foreground: 0, 0%, 0%;
-  --hu-card: 0, 0%, 100%;
-  --hu-card-foreground: 0, 0%, 0%;
+  /* Motion Design System Tokens (Apple HIG / Linear / M3 Standard) */
+  --motion-instant: 90ms;
+  --motion-fast: 150ms;
+  --motion-base: 220ms;
+  --motion-moderate: 280ms;
+  --motion-slow: 420ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-apple: cubic-bezier(0.2, 0.9, 0.25, 1);
+  --hu-background: 0, 0%, 100%;
+  --hu-foreground: 0, 0%, 10%;
+  --hu-card: 0, 0%, 98%;
+  --hu-card-foreground: 0, 0%, 10%;
   --hu-primary: 211, 100%, 50%;
   --hu-primary-foreground: 0, 0%, 100%;
-  --hu-secondary: 240, 11%, 93%;
-  --hu-secondary-foreground: 0, 0%, 20%;
-  --hu-muted: 240, 11%, 93%;
-  --hu-muted-foreground: 240, 4%, 46%;
-  --hu-accent: 240, 11%, 93%;
-  --hu-accent-foreground: 0, 0%, 20%;
+  --hu-secondary: 0, 0%, 95%;
+  --hu-secondary-foreground: 0, 0%, 16%;
+  --hu-muted: 0, 0%, 95%;
+  --hu-muted-foreground: 0, 0%, 45%;
+  --hu-accent: 0, 0%, 95%;
+  --hu-accent-foreground: 0, 0%, 16%;
   --hu-destructive: 9, 96%, 47%;
   --hu-destructive-foreground: 0, 0%, 98%;
-  --hu-border: 240, 6%, 85%;
+  --hu-border: 0, 0%, 90%;
   --hu-input: 0, 0%, 100%;
   --hu-ring: 0, 0%, 71%;
   --color-fd-background: hsl(var(--hu-background));
-  --color-fd-card: hsl(var(--hu-background));
+  --color-fd-card: hsl(var(--hu-card));
 }
 
 .dark {
   color-scheme: dark;
-  --content-bg: #1e1e1e;
-  --card-bg: #262626;
-  --popover-bg: #2a2a2a;
-  --separator: rgba(255, 255, 255, 0.09);
-  --hover: rgba(255, 255, 255, 0.06);
-  --selected: rgba(255, 255, 255, 0.1);
-  --text: rgba(255, 255, 255, 0.88);
-  --text-2: rgba(255, 255, 255, 0.5);
+  --content-bg: #181818;
+  --card-bg: #1f1f1f;
+  --popover-bg: #242424;
+  --separator: rgba(255, 255, 255, 0.08);
+  --hover: rgba(255, 255, 255, 0.05);
+  --selected: rgba(255, 255, 255, 0.09);
+  --text: rgba(255, 255, 255, 0.9);
+  --text-2: rgba(255, 255, 255, 0.52);
   --accent: #0a84ff;
-  --sidebar-solid: #252525;
-  --hu-background: 0, 0%, 0%;
-  --hu-foreground: 0, 0%, 100%;
-  --hu-card: 240, 3%, 11%;
-  --hu-card-foreground: 0, 0%, 100%;
+  --sidebar-solid: #141414;
+  --hu-background: 0, 0%, 9%;
+  --hu-foreground: 0, 0%, 93%;
+  --hu-card: 0, 0%, 12%;
+  --hu-card-foreground: 0, 0%, 93%;
   --hu-primary: 210, 100%, 52%;
   --hu-primary-foreground: 0, 0%, 100%;
-  --hu-secondary: 240, 2%, 18%;
-  --hu-secondary-foreground: 0, 0%, 100%;
-  --hu-muted: 240, 2%, 18%;
-  --hu-muted-foreground: 240, 4%, 62%;
-  --hu-accent: 240, 2%, 18%;
-  --hu-accent-foreground: 0, 0%, 100%;
+  --hu-secondary: 0, 0%, 15%;
+  --hu-secondary-foreground: 0, 0%, 93%;
+  --hu-muted: 0, 0%, 15%;
+  --hu-muted-foreground: 0, 0%, 60%;
+  --hu-accent: 0, 0%, 15%;
+  --hu-accent-foreground: 0, 0%, 93%;
   --hu-destructive: 0, 84%, 50%;
   --hu-destructive-foreground: 0, 0%, 98%;
-  --hu-border: 0, 0%, 100%, 10%;
+  --hu-border: 0, 0%, 100%, 9%;
   --hu-input: 0, 0%, 100%, 5%;
   --hu-ring: 0, 0%, 56%;
   --color-fd-background: hsl(var(--hu-background));
-  --color-fd-card: hsl(var(--hu-background));
+  --color-fd-card: hsl(var(--hu-card));
 }
 
 html,
@@ -113,7 +131,7 @@ body,
   color: var(--text);
   font-size: 13px;
   font-family: var(--font-sans);
-  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  letter-spacing: var(--tracking-normal);
   -webkit-font-smoothing: antialiased;
   user-select: none;
 }
@@ -128,6 +146,14 @@ html[data-platform="linux"] .sidebar {
 
 html[data-platform="mac"] .mac-traffic-pad {
   padding-left: 5rem;
+}
+
+html:not([data-platform="mac"]) .mac-traffic-pad {
+  height: 12px;
+}
+
+html[data-platform="windows"] .win-caption-pad {
+  padding-right: 140px;
 }
 
 .content {
@@ -147,14 +173,393 @@ html[data-platform="mac"] .mac-traffic-pad {
   box-shadow: 0 0 0 1px var(--color-border), 0 24px 60px rgb(0 0 0 / 0.12);
 }
 
+.sidebar-scroll {
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
 .sidebar-item {
   border-radius: 8px;
+  contain: layout paint style;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-instant) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard);
+}
+
+.sidebar-item svg {
+  backface-visibility: hidden;
 }
 
 .sidebar-item:hover {
   background: var(--hover);
 }
 
+.sidebar-item:active {
+  transform: translateZ(0) scale(0.985);
+}
+
 .sidebar-item[data-active="true"] {
   background: var(--selected);
+}
+
+/* ==========================================================================
+   Motion Design System — Keyframes & Semantic Primitives
+   ========================================================================== */
+
+@keyframes motion-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes motion-modal-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes motion-popover-up-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes motion-popover-down-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes motion-drawer-right-in {
+  from {
+    opacity: 0;
+    transform: translate3d(20px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes motion-view-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes motion-tab-in {
+  from {
+    opacity: 0;
+    transform: translate3d(-6px, 0, 0) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes motion-card-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes motion-banner-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes motion-msg-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes motion-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes motion-emphasis-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes motion-status-breathe {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(16 185 129 / 0.42);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgb(16 185 129 / 0);
+  }
+}
+
+@keyframes motion-shimmer-sweep {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes motion-typing-bounce {
+  0%, 80%, 100% {
+    opacity: 0.35;
+    transform: translate3d(0, 0, 0);
+  }
+  40% {
+    opacity: 1;
+    transform: translate3d(0, -2px, 0);
+  }
+}
+
+@keyframes motion-bell-fade {
+  from {
+    opacity: 0;
+    transform: translate3d(0, -3px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.motion-backdrop {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: motion-backdrop-in var(--motion-base) var(--ease-standard) backwards;
+}
+
+.motion-modal {
+  will-change: transform, opacity;
+  animation: motion-modal-in var(--motion-moderate) var(--ease-decelerate) backwards;
+}
+
+.motion-popover-up {
+  transform-origin: bottom center;
+  will-change: transform, opacity;
+  animation: motion-popover-up-in var(--motion-fast) var(--ease-decelerate) backwards;
+}
+
+.motion-popover-down {
+  transform-origin: top center;
+  will-change: transform, opacity;
+  animation: motion-popover-down-in var(--motion-fast) var(--ease-decelerate) backwards;
+}
+
+.motion-drawer-right {
+  will-change: transform, opacity;
+  animation: motion-drawer-right-in var(--motion-moderate) var(--ease-decelerate) backwards;
+}
+
+.motion-view-enter {
+  animation: motion-view-in var(--motion-base) var(--ease-decelerate) backwards;
+}
+
+.motion-tab-enter {
+  animation: motion-tab-in var(--motion-fast) var(--ease-decelerate) backwards;
+}
+
+.motion-card-enter {
+  animation: motion-card-in var(--motion-moderate) var(--ease-decelerate) backwards;
+  animation-delay: calc(min(var(--stagger-index, 0), 10) * 32ms);
+}
+
+.motion-stagger > * {
+  animation: motion-view-in var(--motion-moderate) var(--ease-decelerate) backwards;
+}
+.motion-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.motion-stagger > *:nth-child(2) { animation-delay: 42ms; }
+.motion-stagger > *:nth-child(3) { animation-delay: 84ms; }
+.motion-stagger > *:nth-child(4) { animation-delay: 126ms; }
+.motion-stagger > *:nth-child(5) { animation-delay: 168ms; }
+.motion-stagger > *:nth-child(6) { animation-delay: 210ms; }
+.motion-stagger > *:nth-child(7) { animation-delay: 252ms; }
+.motion-stagger > *:nth-child(n+8) { animation-delay: 280ms; }
+
+.motion-card-hover {
+  transition:
+    box-shadow var(--motion-base) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.motion-card-hover:hover {
+  box-shadow:
+    0 0 0 0.5px color-mix(in oklab, var(--color-primary) 28%, var(--color-border)),
+    0 12px 28px rgb(0 0 0 / 0.07);
+}
+
+.dark .motion-card-hover:hover {
+  box-shadow:
+    0 0 0 0.5px color-mix(in oklab, var(--color-primary) 35%, var(--color-border)),
+    0 14px 32px rgb(0 0 0 / 0.3);
+}
+
+.motion-banner-enter {
+  animation: motion-banner-in var(--motion-base) var(--ease-decelerate) backwards;
+}
+
+.motion-msg-enter {
+  animation: motion-msg-in var(--motion-base) var(--ease-decelerate) backwards;
+}
+
+.motion-pop {
+  animation: motion-pop-in var(--motion-fast) var(--ease-decelerate) backwards;
+}
+
+.motion-shake {
+  animation: motion-emphasis-in var(--motion-base) var(--ease-decelerate) backwards;
+}
+
+.motion-banner-enter.motion-shake {
+  animation: motion-banner-in var(--motion-base) var(--ease-decelerate) backwards;
+}
+
+.motion-press {
+  transition:
+    transform var(--motion-instant) var(--ease-standard),
+    translate var(--motion-fast) var(--ease-decelerate),
+    scale var(--motion-instant) var(--ease-standard),
+    rotate var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard),
+    opacity var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.motion-press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.motion-status-online {
+  animation: motion-status-breathe 2.4s ease-in-out infinite;
+}
+
+.motion-shimmer {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--color-muted) 88%, transparent) 25%,
+    color-mix(in oklab, var(--color-foreground) 8%, var(--color-muted)) 50%,
+    color-mix(in oklab, var(--color-muted) 88%, transparent) 75%
+  );
+  background-size: 200% 100%;
+  animation: motion-shimmer-sweep 1.5s linear infinite;
+}
+
+.motion-typing-dot {
+  animation: motion-typing-bounce 1.2s ease-in-out infinite;
+}
+
+.motion-bell-ring {
+  animation: motion-bell-fade var(--motion-base) var(--ease-decelerate) backwards;
+}
+
+.motion-toggle-thumb {
+  transition:
+    translate 220ms var(--ease-decelerate),
+    transform 220ms var(--ease-decelerate),
+    width var(--motion-fast) var(--ease-standard);
+}
+
+.group\/toggle:active .motion-toggle-thumb {
+  width: 19px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Hide xterm viewport scrollbar while preserving smooth wheel/trackpad scrolling */
+.xterm .xterm-viewport {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+/* Sleek, minimal overlay-style scrollbars for sidebar and pages */
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(128, 128, 128, 0.22);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(128, 128, 128, 0.4);
 }

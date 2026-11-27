@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ConfirmPanel,
   type ConfirmPanelProps,
@@ -11,31 +11,54 @@ interface ConfirmDialogProps {
 }
 
 export function ConfirmDialog({ open, onCancel, panel }: ConfirmDialogProps) {
+  const [busy, setBusy] = useState(false);
+
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setBusy(false);
+      return;
+    }
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onCancel();
+      if (e.key === "Escape" && !busy) onCancel();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, onCancel]);
+  }, [open, busy, onCancel]);
 
   if (!open) return null;
 
+  const panelWithBusy: ConfirmPanelProps = panel.swipe
+    ? {
+        ...panel,
+        swipe: {
+          ...panel.swipe,
+          onBusyChange: (nextBusy) => {
+            setBusy(nextBusy);
+            panel.swipe?.onBusyChange?.(nextBusy);
+          },
+        },
+      }
+    : panel;
+
   return (
     <div
-      className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
-      onClick={onCancel}
+      className="motion-backdrop fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+      onClick={() => {
+        if (!busy) onCancel();
+      }}
     >
       <div
-        className="flex w-full max-w-[380px] flex-col items-center"
+        className="motion-modal flex w-full max-w-[380px] flex-col items-center"
         onClick={(e) => e.stopPropagation()}
       >
-        <ConfirmPanel {...panel} presentation="card" />
+        <ConfirmPanel {...panelWithBusy} presentation="card" />
         <button
           type="button"
-          onClick={onCancel}
-          className="mt-3 h-11 w-full rounded-[12px] bg-muted px-5 text-[15px] font-semibold text-foreground transition active:scale-[.97]"
+          disabled={busy}
+          onClick={() => {
+            if (!busy) onCancel();
+          }}
+          className="motion-press mt-3 h-11 w-full rounded-[12px] bg-muted px-5 text-[15px] font-semibold text-foreground hover:bg-muted/85 disabled:cursor-not-allowed disabled:opacity-50"
         >
           取消
         </button>

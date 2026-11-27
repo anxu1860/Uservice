@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <title>Uservice App Icon</title>
+  <rect id="background" width="512" height="512" rx="112" fill="#6171FE"/>
+  <g id="mark" fill="#000000" transform="translate(92.6 118.1) scale(1.9)">
+    <path d="M0 48H27V94A14 14 0 0 0 41 108H131A14 14 0 0 0 145 94V48H172V100A42 42 0 0 1 130 142H42A42 42 0 0 1 0 100Z"/>
+    <rect x="39" y="0" width="60" height="24"/>
+    <rect x="109" y="0" width="24" height="24"/>
+    <rect x="39" y="36" width="60" height="24"/>
+    <rect x="109" y="36" width="24" height="24"/>
+    <rect x="39" y="72" width="60" height="24"/>
+    <rect x="109" y="72" width="24" height="24"/>
+  </g>
+</svg>

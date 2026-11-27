@@ -1,9 +1,12 @@
 [package]
 name = "serverhub-app"
 version = "0.1.0"
-description = "ServerHub Desktop Application"
-authors = ["ServerHub Contributors"]
+description = "Uservice — Cross-platform server management client for SSH, VNC & RDP with AI assistant and built-in MCP server"
+authors = ["Uservice Contributors"]
+license.workspace = true
+repository.workspace = true
 edition = "2024"
+rust-version.workspace = true
 
 [lib]
 name = "app_lib"
@@ -17,9 +20,22 @@ tauri = { version = "2", features = ["macos-private-api"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+reqwest = { version = "0.13", features = ["json", "native-tls"] }
 tokio = { version = "1", features = ["full"] }
 uuid = { version = "1", features = ["v4"] }
 serverhub-core = { path = "../../crates/core" }
 serverhub-monitor = { path = "../../crates/monitor" }
 serverhub-ssh = { path = "../../crates/ssh" }
-keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+serverhub-bridge = { path = "../../crates/bridge" }
+serverhub-ai = { path = "../../crates/ai" }
+aes-gcm = "0.10"
+base64 = "0.21"
+hkdf = "0.12"
+rand = "0.8"
+rusqlite = { version = "0.32", features = ["bundled"] }
+sha2 = "0.10"
+subtle = "2"
+zeroize = "1"
+
+[target.'cfg(target_os = "macos")'.dependencies]
+security-framework = "3"

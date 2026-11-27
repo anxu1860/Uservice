@@ -4,7 +4,10 @@ import {
   siAkamai,
   siDigitalocean,
   siHetzner,
+  siOvh,
+  siScaleway,
   siVultr,
+  type SimpleIcon,
 } from "simple-icons";
 import { cn } from "@/lib/utils";
 import type { Server } from "../types";
@@ -12,17 +15,31 @@ import type { Server } from "../types";
 export type ProviderId =
   | "tencent"
   | "aliyun"
+  | "huawei"
+  | "volcengine"
+  | "jdcloud"
+  | "baidu"
+  | "ucloud"
+  | "qiniu"
+  | "rainyun"
+  | "bytevirt"
+  | "ppflight"
+  | "panstarcloud"
+  | "bandwagon"
+  | "dmit"
+  | "racknerd"
+  | "rabisu"
   | "aws"
   | "gcp"
   | "azure"
-  | "huawei"
-  | "volcengine"
   | "cloudflare"
   | "digitalocean"
   | "vultr"
   | "hetzner"
   | "linode"
   | "oracle"
+  | "ovh"
+  | "scaleway"
   | "generic";
 
 export const CLOUD_PROVIDERS: { id: ProviderId | "auto"; label: string }[] = [
@@ -31,6 +48,18 @@ export const CLOUD_PROVIDERS: { id: ProviderId | "auto"; label: string }[] = [
   { id: "aliyun", label: "阿里云 Alibaba Cloud" },
   { id: "huawei", label: "华为云 Huawei Cloud" },
   { id: "volcengine", label: "火山引擎 Volcengine" },
+  { id: "jdcloud", label: "京东云 JD Cloud" },
+  { id: "baidu", label: "百度智能云 Baidu Cloud" },
+  { id: "ucloud", label: "UCloud 优刻得" },
+  { id: "qiniu", label: "七牛云 Qiniu" },
+  { id: "rainyun", label: "雨云 Rainyun" },
+  { id: "bytevirt", label: "ByteVirt" },
+  { id: "ppflight", label: "PPFlight" },
+  { id: "panstarcloud", label: "PanstarCloud" },
+  { id: "bandwagon", label: "搬瓦工 BandwagonHost" },
+  { id: "dmit", label: "DMIT" },
+  { id: "racknerd", label: "RackNerd" },
+  { id: "rabisu", label: "Rabisu" },
   { id: "aws", label: "AWS Amazon" },
   { id: "gcp", label: "Google Cloud" },
   { id: "azure", label: "Microsoft Azure" },
@@ -40,12 +69,55 @@ export const CLOUD_PROVIDERS: { id: ProviderId | "auto"; label: string }[] = [
   { id: "hetzner", label: "Hetzner" },
   { id: "linode", label: "Linode / Akamai" },
   { id: "oracle", label: "Oracle Cloud" },
-  { id: "generic", label: "通用 Linux 服务器" },
+  { id: "ovh", label: "OVHcloud" },
+  { id: "scaleway", label: "Scaleway" },
+  { id: "generic", label: "通用服务器" },
 ];
 
 const VALID_IDS = new Set<string>(
   CLOUD_PROVIDERS.map((p) => p.id).filter((id) => id !== "auto")
 );
+
+const DETECT_RULES: [RegExp, ProviderId][] = [
+  [/腾讯|tencent|qcloud|lighthouse/, "tencent"],
+  [/阿里|aliyun|alibaba/, "aliyun"],
+  [/华为|huawei/, "huawei"],
+  [/火山|volc|bytedance/, "volcengine"],
+  [/京东|jdcloud|jcloud/, "jdcloud"],
+  [/百度|baidu|\bbce\b/, "baidu"],
+  [/ucloud|优刻得/, "ucloud"],
+  [/七牛|qiniu/, "qiniu"],
+  [/雨云|rainyun/, "rainyun"],
+  [/bytevirt/, "bytevirt"],
+  [/ppflight/, "ppflight"],
+  [/panstar/, "panstarcloud"],
+  [/搬瓦工|bandwagon|\bbwh\b/, "bandwagon"],
+  [/\bdmit\b/, "dmit"],
+  [/racknerd/, "racknerd"],
+  [/rabisu/, "rabisu"],
+  [/\baws\b|amazon|amazonaws|lightsail|\bec2\b/, "aws"],
+  [/\bgcp\b|google|googleapis/, "gcp"],
+  [/azure|microsoft/, "azure"],
+  [/cloudflare/, "cloudflare"],
+  [/digitalocean|droplet/, "digitalocean"],
+  [/vultr/, "vultr"],
+  [/hetzner/, "hetzner"],
+  [/linode|akamai/, "linode"],
+  [/oracle|\boci\b/, "oracle"],
+  [/\bovh\b|ovhcloud/, "ovh"],
+  [/scaleway/, "scaleway"],
+];
+
+const SIMPLE_PROVIDER_ICONS: Partial<
+  Record<ProviderId, { icon: SimpleIcon; label: string }>
+> = {
+  digitalocean: { icon: siDigitalocean, label: "DigitalOcean" },
+  vultr: { icon: siVultr, label: "Vultr" },
+  hetzner: { icon: siHetzner, label: "Hetzner" },
+  linode: { icon: siAkamai, label: "Linode / Akamai" },
+  ovh: { icon: siOvh, label: "OVHcloud" },
+  scaleway: { icon: siScaleway, label: "Scaleway" },
+};
 
 export function detectProvider(
   server: Pick<Server, "name" | "group" | "host" | "provider">
@@ -55,19 +127,11 @@ export function detectProvider(
   }
   const haystack = `${server.name} ${server.group ?? ""} ${server.host}`.toLowerCase();
 
-  if (/腾讯|tencent|qcloud|lighthouse/.test(haystack)) return "tencent";
-  if (/阿里|aliyun|alibaba/.test(haystack)) return "aliyun";
-  if (/华为|huawei/.test(haystack)) return "huawei";
-  if (/火山|volc|bytedance/.test(haystack)) return "volcengine";
-  if (/\baws\b|amazon|amazonaws|lightsail|\bec2\b/.test(haystack)) return "aws";
-  if (/\bgcp\b|google|googleapis/.test(haystack)) return "gcp";
-  if (/azure|microsoft/.test(haystack)) return "azure";
-  if (/cloudflare/.test(haystack)) return "cloudflare";
-  if (/digitalocean|droplet/.test(haystack)) return "digitalocean";
-  if (/vultr/.test(haystack)) return "vultr";
-  if (/hetzner/.test(haystack)) return "hetzner";
-  if (/linode|akamai/.test(haystack)) return "linode";
-  if (/oracle|\boci\b/.test(haystack)) return "oracle";
+  for (const [pattern, id] of DETECT_RULES) {
+    if (pattern.test(haystack)) {
+      return id;
+    }
+  }
   return "generic";
 }
 
@@ -80,6 +144,15 @@ export function ProviderIcon({ server, className }: ProviderIconProps) {
   const uid = useId();
   const id = detectProvider(server);
   const cls = cn("h-4 w-4 shrink-0", className);
+
+  const simpleEntry = SIMPLE_PROVIDER_ICONS[id];
+  if (simpleEntry) {
+    return (
+      <svg viewBox="0 0 24 24" className={cls} aria-label={simpleEntry.label}>
+        <path d={simpleEntry.icon.path} fill={`#${simpleEntry.icon.hex}`} />
+      </svg>
+    );
+  }
 
   switch (id) {
     case "tencent":
@@ -256,31 +329,220 @@ export function ProviderIcon({ server, className }: ProviderIconProps) {
         </svg>
       );
 
-    case "digitalocean":
+    case "jdcloud":
       return (
-        <svg viewBox="0 0 24 24" className={cls} aria-label="DigitalOcean">
-          <path d={siDigitalocean.path} fill={`#${siDigitalocean.hex}`} />
+        <svg viewBox="0 0 305 305" className={cls} aria-label="京东云">
+          <path
+            d="M268.16,137.84c2.86,4,5,9.43,4.76,20.81-3.22,35.73-33.55,58.29-63.75,58.29-32.68,0-55.69-23.52-69.53-49.8C136.37,160.93,134,154,131.77,148c-4.37,5.94-13.58,15.63-18.27,20.14A116,116,0,0,0,124.56,191c3.69,5.75,13,18.76,26.31,29.06,12.1,9.33,23.71,15.06,36.84,18.33a89.94,89.94,0,0,0,65.39-9.22c23.75-13.61,40.49-38.68,43.52-64.71C290.77,154.76,278.09,143.3,268.16,137.84Z"
+            fill="#E1251B"
+          />
+          <path
+            d="M68.35,128.37a44.06,44.06,0,0,1,23.41,6.71c5.63-6,10.61-12.2,15.78-18.45A68.32,68.32,0,0,0,0,172.6a68.79,68.79,0,0,0,.81,10.51c1.91,2.36,21.15.76,24.15-1.94a44.71,44.71,0,0,1-.84-8.57A44.23,44.23,0,0,1,68.35,128.37Z"
+            fill="#E1251B"
+          />
+          <path
+            d="M68.35,241A68.34,68.34,0,0,1,9.17,206.82c.92-1.22,22.42-3.61,27.55-3.32a44.08,44.08,0,0,0,31.63,13.33s27.2,2.09,52.62-18c0,0,9.56,13.62,16.9,18.74C137.87,217.57,113.9,241,68.35,241Z"
+            fill="#E1251B"
+          />
+          <path
+            d="M245.29,71.8C213,58.23,181.5,62.19,150.37,85.07,122.92,105.24,112,125.56,94.44,143c-21,20.86-36.75,27.88-49.24,32.6-12.9,4.88-30.9,8.21-44.39,7.47a68.48,68.48,0,0,0,8.36,23.71c34.44-.59,58.72-13.77,74.38-23.32,13.69-8.35,34.29-29.38,45.1-43,17.37-21.86,40-42.77,60.69-49.33,28.9-9.15,57,3.65,70.62,21.73,1.22,1.59,26.76,10.76,34.79,17.66C291.8,118,277.88,85.5,245.29,71.8Z"
+            fill="#E1251B"
+          />
+          <path
+            d="M294,127.76A91.7,91.7,0,0,0,241.85,111c-22.61,0-45.25,8.81-61.18,24.5-11.59,11.4-17.23,20.65-30.08,36.06a105.16,105.16,0,0,0,17.08,20c1.66-2.42,11-15.64,18-24.93,9-11.82,18.14-21.27,32-26.74a64.54,64.54,0,0,1,78.82,25.69A89.61,89.61,0,0,0,294,127.76Z"
+            fill="#E1251B"
+          />
         </svg>
       );
 
-    case "vultr":
+    case "baidu":
       return (
-        <svg viewBox="0 0 24 24" className={cls} aria-label="Vultr">
-          <path d={siVultr.path} fill={`#${siVultr.hex}`} />
+        <svg viewBox="0 0 24 24" className={cls} aria-label="百度智能云">
+          <path
+            d="M21.715 5.61l-3.983 2.31a.903.903 0 01-.896 0L12.44 5.384a.903.903 0 00-.897 0L7.156 7.92a.903.903 0 01-.896 0L2.276 5.617 12.002 0l9.713 5.61z"
+            fill="#5BCA87"
+          />
+          <path
+            d="M18.641 9.467a.89.89 0 00-.438.77v5.072a.896.896 0 01-.445.77l-4.428 2.51a.884.884 0 00-.445.777v4.607l4.429-2.536 5.31-3.047V7.157l-3.983 2.31z"
+            fill="#EC5D3E"
+          />
+          <path
+            d="M10.98 18.941a.936.936 0 00-.305-.352l-4.429-2.516a.903.903 0 01-.431-.764v-5.078a.89.89 0 00-.452-.757l-.451-.26L1.38 7.158V18.39l5.311 3.047L11.126 24v-4.608a.881.881 0 00-.146-.45z"
+            fill="#2464F5"
+          />
         </svg>
       );
 
-    case "hetzner":
+    case "ucloud":
       return (
-        <svg viewBox="0 0 24 24" className={cls} aria-label="Hetzner">
-          <path d={siHetzner.path} fill={`#${siHetzner.hex}`} />
+        <svg viewBox="0 0 24 24" className={cls} aria-label="UCloud 优刻得">
+          <path
+            d="M 20.47 3.81 L 20.47 15.68 C 20.47 17.92 19.31 19.09 18.56 19.82 C 17.13 21.19 15.09 22.00 12.66 22.00 C 10.23 22.00 7.99 20.89 7.04 20.02 C 6.19 19.25 4.89 17.94 4.89 15.50 L 4.89 8.63 L 6.62 8.63 L 6.61 6.87 L 8.35 6.88 L 8.35 5.17 L 10.10 5.16 L 10.10 15.46 C 10.10 17.80 11.74 18.13 12.68 18.13 C 13.58 18.13 15.27 17.65 15.27 15.52 L 15.26 3.81 H 20.47 z M 6.09 6.94 L 6.09 8.06 L 4.96 8.06 L 4.96 6.94 L 6.09 6.94 z M 6.99 2.00 H 7.78 V 2.78 H 6.99 V 2.00 z M 7.81 5.22 L 7.81 6.34 L 6.68 6.34 L 6.68 5.22 L 7.81 5.22 z M 8.42 3.44 L 8.42 4.55 L 9.56 4.55 L 9.56 3.44 L 8.42 3.44 z M 6.79 3.65 L 6.79 4.62 L 7.77 4.62 L 7.77 3.65 L 6.79 3.65 z M 5.05 5.38 L 5.05 6.35 L 6.03 6.35 L 6.03 5.38 L 5.05 5.38 z M 3.53 5.49 L 3.53 6.27 L 4.32 6.27 L 4.32 5.49 L 3.53 5.49 z M 5.26 3.72 L 5.26 4.49 L 6.05 4.49 L 6.05 3.72 L 5.26 3.72 z M 3.61 3.83 L 3.61 4.44 L 4.22 4.44 L 4.22 3.83 L 3.61 3.83 z M 5.36 2.09 L 5.36 2.69 L 5.98 2.69 L 5.98 2.09 L 5.36 2.09 z M 3.70 2.17 L 3.70 2.56 L 4.11 2.56 L 4.11 2.17 L 3.70 2.17 z"
+            fill="#3860F4"
+          />
         </svg>
       );
 
-    case "linode":
+    case "qiniu":
       return (
-        <svg viewBox="0 0 24 24" className={cls} aria-label="Linode / Akamai">
-          <path d={siAkamai.path} fill={`#${siAkamai.hex}`} />
+        <svg viewBox="0 0 24 24" className={cls} aria-label="七牛云">
+          <path
+            d="M23.111 4.6a.914.914 0 00-.861.161A13.443 13.443 0 017.947 8.897L7.38 6.831a1.076 1.076 0 00-1.211-.698l.27 2.18c-1.816-.827-2.313-.946-3.587-2.45C2.674 5.729 1.263 4.472.89 4.6a11.906 11.906 0 005.892 6.497l.738 5.97s.33 2.286 2.473 2.286h4.586c2.144 0 2.474-2.286 2.474-2.286l.518-4.28c-1.393-.11-2.268.857-2.546 1.814-.465 1.614-.465 1.716-.557 1.998-.188.575-.806.644-.806.644h-2.753s-.617-.07-.806-.644c-.12-.371-.727-2.54-1.335-4.74A11.877 11.877 0 0023.11 4.599V4.6z"
+            fill="#06AEEF"
+          />
+        </svg>
+      );
+
+    case "rainyun":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} aria-label="雨云 Rainyun">
+          <path
+            d="M4.246 15.98c-.18-.143-.216-.279-.493-1.887-.282-1.634-.094-1.452-1.794-1.748-1.743-.305-1.66-.283-1.789-.448-.267-.341-.194-.537.68-1.816.435-.637.82-1.214.857-1.283.086-.162.081-.17-.872-1.562C-.416 5.41-.408 5.393 1.873 4.998c.852-.148 1.572-.284 1.6-.301.027-.018.174-.75.327-1.629.397-2.286.309-2.25 2.227-.93 1.556 1.067 1.135 1.061 2.643.036C10.66.822 10.556.78 10.953 3.09c.31 1.802.16 1.587 1.301 1.854 1.493.227.742.493-.195.738a5.22 5.22 0 0 0-1.103.42c-.763.384-.79.383-1.27-.026-2.228-1.907-5.526-.58-5.85 2.353-.138 1.247.59 2.551 1.837 3.29.228.135.235.325.034.922-.223.664-.286 1.472-.163 2.109.162.838-.727 1.682-1.298 1.231z"
+            fill="#FACC15"
+          />
+          <path
+            d="M6.015 10.893c-2.738-1.756-.423-5.982 2.52-4.602.912.427 1.035.776.536 1.51-.355.522-.496.816-.705 1.479-.176.558-.17.551-.677.894-.22.15-.553.408-.74.575-.401.359-.562.383-.934.144z"
+            fill="#EF4444"
+          />
+          <path
+            d="M9.494 17.429c-3.439-.42-3.997-5.627-.719-6.695.418-.137.498-.217.498-.497 0-3.244 4.472-4.913 6.881-2.568.47.456.47.456.753.34 1.553-.631 3.65.405 4.266 2.107.165.456.194.492.43.537 3.21.603 3.19 5.66-.026 6.686-.381.121-11.167.202-12.083.09z"
+            fill="#94A3B8"
+          />
+          <path
+            d="M7.976 22.69c-.539-.19-.81-.83-.63-1.483.09-.325 1.554-2.49 1.773-2.623.992-.6 2.026.57 1.469 1.664-.202.396-1.211 1.874-1.469 2.15-.342.367-.686.454-1.143.293zm3.979.027c-.517-.156-.816-.862-.637-1.508.09-.328 1.548-2.488 1.772-2.627.99-.613 2.032.562 1.473 1.66-.208.41-1.305 2.016-1.516 2.222a1 .897 0 0 1-1.092.253zm3.966-.026c-.54-.192-.811-.831-.63-1.484.09-.325 1.554-2.49 1.773-2.623.992-.6 2.025.57 1.469 1.664-.202.396-1.211 1.874-1.469 2.15-.342.367-.686.454-1.143.293zm3.973 0c-.54-.192-.812-.831-.63-1.484.09-.325 1.553-2.49 1.772-2.623.98-.544 1.915.721 1.212 1.76-.046.069-.642 1.371-1.259 2.024-.31.329-.812.423-1.095.323z"
+            fill="#38BDF8"
+          />
+        </svg>
+      );
+
+    case "bytevirt":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} aria-label="ByteVirt">
+          <path
+            d="M12 2.2L20.5 7.1V16.9L12 21.8L3.5 16.9V7.1L12 2.2Z"
+            fill="none"
+            stroke="#3850E5"
+            strokeWidth="1.9"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M12 5.4L17.7 8.7V15.3L12 18.6L6.3 15.3V8.7L12 5.4Z"
+            fill="#3850E5"
+          />
+          <path
+            d="M9.6 14.3h4.9a1.45 1.45 0 00.2-2.88 2.1 2.1 0 00-4.05-.42A1.65 1.65 0 009.6 14.3z"
+            fill="none"
+            stroke="#FFFFFF"
+            strokeWidth="1.15"
+            strokeLinejoin="round"
+          />
+        </svg>
+      );
+
+    case "ppflight":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} aria-label="PPFlight">
+          <rect x="2" y="2" width="20" height="20" rx="4.5" fill="#11161D" />
+          <path
+            d="M6.8 9.2V7.8C6.8 6.6 7.8 5.8 9.1 5.8H19.6L17.4 8.2L6.8 9.2Z"
+            fill="#FFFFFF"
+          />
+          <path
+            d="M17.2 8.2C18.3 8.9 18.8 10.0 18.8 11.2C18.8 13.2 17.2 14.6 14.7 14.6H10.5V19.0C10.5 19.7 9.9 20.2 9.1 20.2H6.8V10.6L14.6 10.1L16.7 8.1L17.2 8.2Z"
+            fill="#FFFFFF"
+          />
+        </svg>
+      );
+
+    case "panstarcloud":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} aria-label="PanstarCloud">
+          <rect x="2" y="2" width="20" height="20" rx="5" fill="#0B1120" />
+          <path
+            d="M8.0 19.2V6.8C8.0 5.7 8.9 5.0 10.0 5.0H14.5C17.8 5.0 19.8 7.1 19.8 10.3C19.8 13.3 17.9 15.2 15.0 15.5L18.4 18.1"
+            fill="none"
+            stroke={`url(#${uid}-ps)`}
+            strokeWidth="2.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d="M12.9 7.8L13.6 9.6L15.4 10.3L13.6 11.0L12.9 12.8L12.2 11.0L10.4 10.3L12.2 9.6Z"
+            fill="#FFFFFF"
+          />
+          <circle cx="12.9" cy="10.3" r="0.85" fill="#38BDF8" />
+          <defs>
+            <linearGradient
+              id={`${uid}-ps`}
+              x1="7"
+              y1="5"
+              x2="19"
+              y2="19"
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop stopColor="#E0F2FE" />
+              <stop offset="0.45" stopColor="#60A5FA" />
+              <stop offset="1" stopColor="#38BDF8" />
+            </linearGradient>
+          </defs>
+        </svg>
+      );
+
+    case "bandwagon":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} aria-label="搬瓦工 BandwagonHost">
+          <rect x="2" y="2" width="20" height="20" rx="5" fill="#1E293B" />
+          <path
+            d="M4.2 15.2V8.8h2.6c1.0 0 1.7.5 1.7 1.4 0 .6-.3 1.1-.8 1.3.7.2 1.1.7 1.1 1.5 0 1.1-.8 2.2-2.1 2.2H4.2zm1.5-3.8h1.0c.4 0 .7-.2.7-.6 0-.4-.3-.6-.7-.6H5.7v1.2zm0 2.5h1.1c.5 0 .8-.3.8-.7 0-.5-.3-.7-.8-.7H5.7v1.4z"
+            fill="#F59E0B"
+          />
+          <path
+            d="M9.3 8.8h1.3l.8 4.2.9-4.2h1.2l.9 4.2.8-4.2h1.3l-1.4 6.4h-1.3l-.9-4.0-.9 4.0h-1.3L9.3 8.8z"
+            fill="#F59E0B"
+          />
+          <path
+            d="M17.1 15.2V8.8h1.4v2.5h1.8V8.8h1.4v6.4h-1.4v-2.6h-1.8v2.6h-1.4z"
+            fill="#CBD5E1"
+          />
+        </svg>
+      );
+
+    case "dmit":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} aria-label="DMIT">
+          <path
+            d="M1.2 9.0H2.8L4.4 11.2L2.8 13.5H1.2L2.8 11.2L1.2 9.0ZM4.6 14.2H7.6V15.4H4.6V14.2ZM8.3 9.0H9.7V13.5H8.3V9.0ZM10.1 9.0H10.6C12.0 9.0 12.8 9.8 12.8 11.25C12.8 12.7 12.0 13.5 10.6 13.5H10.1V12.2H10.5C11.1 12.2 11.5 11.8 11.5 11.25C11.5 10.7 11.1 10.3 10.5 10.3H10.1V9.0ZM13.5 9.0L15.7 10.8L17.9 9.0V13.5H16.6V11.3L15.7 12.1L14.8 11.3V13.5H13.5V9.0ZM18.7 9.0H20.0V13.5H18.7V9.0ZM20.6 9.0H23.5V10.2H20.6V9.0ZM21.4 10.6H22.7V13.5H21.4V10.6Z"
+            fill="#2B99D8"
+          />
+        </svg>
+      );
+
+    case "racknerd":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} aria-label="RackNerd">
+          <rect x="0.5" y="0.5" width="23" height="4.5" rx="2.25" fill="#0078BF" />
+          <rect x="0.5" y="19" width="23" height="4.5" rx="2.25" fill="#0078BF" />
+          <rect x="0.5" y="8" width="9.6" height="8" rx="3.2" fill="#00164F" />
+          <rect x="13.9" y="8" width="9.6" height="8" rx="3.2" fill="#00164F" />
+          <path
+            d="M9.5 11.6C10.8 10.2 13.2 10.2 14.5 11.6"
+            fill="none"
+            stroke="#00164F"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        </svg>
+      );
+
+    case "rabisu":
+      return (
+        <svg viewBox="0 0 24 24" className={cls} aria-label="Rabisu">
+          <path
+            d="M5.6 4.2H7.8L11.8 8.2C11.8 5.2 14.0 3.2 16.8 3.2C19.6 3.2 21.8 5.2 21.8 8.2V19.8L19.0 17.6H19.8V8.2C19.8 6.4 18.5 5.2 16.8 5.2C15.1 5.2 13.8 6.4 13.8 8.2V12.4L5.6 4.2Z"
+            fill="#10B981"
+          />
+          <path d="M1.6 4.2H3.8L16.4 16.8V19.0L1.6 4.2Z" fill="#10B981" />
+          <path d="M4.6 10.8H6.8L17.0 21.0V23.2L4.6 10.8Z" fill="#10B981" />
         </svg>
       );
 
@@ -298,4 +560,45 @@ export function ProviderIcon({ server, className }: ProviderIconProps) {
     default:
       return <ServerIcon className={cn("h-4 w-4 shrink-0 text-primary", className)} />;
   }
+}
+
+const PROVIDER_GRADIENTS: Record<ProviderId, [string, string, string?]> = {
+  tencent: ["rgba(0, 163, 255, 0.14)", "rgba(0, 110, 255, 0.05)", "rgba(0, 200, 220, 0.10)"],
+  aliyun: ["rgba(255, 106, 0, 0.14)", "rgba(255, 106, 0, 0.04)", "rgba(255, 160, 64, 0.09)"],
+  huawei: ["rgba(207, 10, 44, 0.13)", "rgba(207, 10, 44, 0.04)", "rgba(255, 77, 79, 0.09)"],
+  volcengine: ["rgba(51, 112, 255, 0.14)", "rgba(51, 112, 255, 0.04)", "rgba(0, 184, 217, 0.10)"],
+  jdcloud: ["rgba(225, 37, 27, 0.13)", "rgba(225, 37, 27, 0.04)", "rgba(255, 90, 80, 0.08)"],
+  baidu: ["rgba(36, 100, 245, 0.13)", "rgba(91, 202, 135, 0.05)", "rgba(236, 93, 62, 0.08)"],
+  ucloud: ["rgba(56, 96, 244, 0.14)", "rgba(56, 96, 244, 0.04)", "rgba(96, 165, 250, 0.09)"],
+  qiniu: ["rgba(6, 174, 239, 0.14)", "rgba(6, 174, 239, 0.04)", "rgba(56, 189, 248, 0.09)"],
+  rainyun: ["rgba(56, 189, 248, 0.13)", "rgba(250, 204, 21, 0.05)", "rgba(14, 165, 233, 0.09)"],
+  bytevirt: ["rgba(56, 80, 229, 0.14)", "rgba(56, 80, 229, 0.04)", "rgba(99, 102, 241, 0.10)"],
+  ppflight: ["rgba(100, 116, 139, 0.14)", "rgba(30, 41, 59, 0.05)", "rgba(148, 163, 184, 0.09)"],
+  panstarcloud: ["rgba(56, 189, 248, 0.14)", "rgba(96, 165, 250, 0.05)", "rgba(14, 165, 233, 0.09)"],
+  bandwagon: ["rgba(245, 158, 11, 0.14)", "rgba(245, 158, 11, 0.04)", "rgba(251, 191, 36, 0.09)"],
+  dmit: ["rgba(43, 153, 216, 0.14)", "rgba(43, 153, 216, 0.04)", "rgba(56, 189, 248, 0.09)"],
+  racknerd: ["rgba(0, 120, 191, 0.14)", "rgba(0, 22, 79, 0.05)", "rgba(56, 189, 248, 0.09)"],
+  rabisu: ["rgba(16, 185, 129, 0.14)", "rgba(16, 185, 129, 0.04)", "rgba(52, 211, 153, 0.09)"],
+  aws: ["rgba(255, 153, 0, 0.14)", "rgba(255, 153, 0, 0.04)", "rgba(251, 191, 36, 0.09)"],
+  gcp: ["rgba(66, 133, 244, 0.13)", "rgba(234, 67, 53, 0.05)", "rgba(52, 168, 83, 0.09)"],
+  azure: ["rgba(0, 120, 212, 0.14)", "rgba(0, 120, 212, 0.04)", "rgba(80, 230, 255, 0.10)"],
+  cloudflare: ["rgba(243, 128, 32, 0.14)", "rgba(243, 128, 32, 0.04)", "rgba(250, 174, 64, 0.10)"],
+  digitalocean: ["rgba(0, 128, 255, 0.14)", "rgba(0, 128, 255, 0.04)", "rgba(56, 189, 248, 0.09)"],
+  vultr: ["rgba(0, 123, 252, 0.14)", "rgba(0, 123, 252, 0.04)", "rgba(59, 130, 246, 0.09)"],
+  hetzner: ["rgba(213, 12, 45, 0.13)", "rgba(213, 12, 45, 0.04)", "rgba(244, 63, 94, 0.08)"],
+  linode: ["rgba(0, 169, 92, 0.13)", "rgba(0, 169, 92, 0.04)", "rgba(0, 155, 222, 0.09)"],
+  oracle: ["rgba(248, 0, 0, 0.12)", "rgba(248, 0, 0, 0.04)", "rgba(239, 68, 68, 0.08)"],
+  ovh: ["rgba(0, 80, 215, 0.14)", "rgba(0, 80, 215, 0.04)", "rgba(59, 130, 246, 0.09)"],
+  scaleway: ["rgba(79, 5, 153, 0.14)", "rgba(79, 5, 153, 0.04)", "rgba(139, 92, 246, 0.10)"],
+  generic: ["rgba(100, 116, 139, 0.09)", "rgba(100, 116, 139, 0.02)", "rgba(148, 163, 184, 0.07)"],
+};
+
+export function getProviderCardGradient(
+  server: Pick<Server, "name" | "group" | "host" | "provider">
+): string {
+  const id = detectProvider(server);
+  const [c1, c2, c3] = PROVIDER_GRADIENTS[id] ?? PROVIDER_GRADIENTS.generic;
+  return c3
+    ? `linear-gradient(135deg, ${c1} 0%, ${c2} 50%, ${c3} 100%)`
+    : `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`;
 }

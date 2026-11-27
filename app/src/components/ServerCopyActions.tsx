@@ -30,7 +30,7 @@ const COPY_OPTIONS: CopyOption[] = [
     id: "endpoint",
     label: "复制连接地址",
     preview: "user@host:port",
-    getValue: (s) => `${s.username}@${s.host}:${s.port}`,
+    getValue: (s) => `${s.username ? `${s.username}@` : ""}${s.host}:${s.port}`,
   },
   {
     id: "host",
@@ -48,6 +48,8 @@ const COPY_OPTIONS: CopyOption[] = [
 
 export function ServerCopyActions({ server }: ServerCopyActionsProps) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [openUp, setOpenUp] = useState(true);
+  const [alignRight, setAlignRight] = useState(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<number | null>(null);
@@ -125,7 +127,19 @@ export function ServerCopyActions({ server }: ServerCopyActionsProps) {
 
         <button
           type="button"
-          onClick={() => setMenuOpen((v) => !v)}
+          onClick={() => {
+            if (!menuOpen && containerRef.current) {
+              const rect = containerRef.current.getBoundingClientRect();
+              const menuHeight = 230;
+              const menuWidth = 248;
+              setOpenUp(
+                rect.top >= menuHeight ||
+                  rect.top > window.innerHeight - rect.bottom
+              );
+              setAlignRight(rect.right >= menuWidth);
+            }
+            setMenuOpen((v) => !v);
+          }}
           aria-label="更多复制选项"
           aria-expanded={menuOpen}
           aria-haspopup="menu"
@@ -143,7 +157,11 @@ export function ServerCopyActions({ server }: ServerCopyActionsProps) {
       {menuOpen && (
         <div
           role="menu"
-          className="absolute right-0 bottom-full z-30 mb-1.5 w-60 rounded-[14px] bg-card p-1.5 shadow-[0_0_0_0.5px_var(--color-border),0_12px_32px_rgb(0_0_0/0.14)]"
+          className={cn(
+            "absolute z-40 w-60 rounded-[14px] bg-card p-1.5 shadow-[0_0_0_0.5px_var(--color-border),0_12px_32px_rgb(0_0_0/0.14)]",
+            openUp ? "bottom-full mb-1.5" : "top-full mt-1.5",
+            alignRight ? "right-0" : "left-0"
+          )}
         >
           {COPY_OPTIONS.map((opt) => {
             const value = opt.getValue(server);

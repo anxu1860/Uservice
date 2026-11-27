@@ -28,7 +28,7 @@ type Theme = typeof T;
 
 const FONT = "var(--font-sans)";
 const EASE = "cubic-bezier(.2,.9,.25,1)";
-const SPRING = "cubic-bezier(.34,1.56,.64,1)";
+const SPRING = "cubic-bezier(.22,1,.36,1)";
 const SHEET = "cubic-bezier(.32,.72,0,1)";
 
 const CSS = `
@@ -67,6 +67,8 @@ export type SwipeToConfirmProps = {
   onConfirm?: () => Promise<unknown> | unknown;
   /** fires once the done state shows */
   onDone?: () => void;
+  /** fires when the async confirmation loading state toggles */
+  onBusyChange?: (busy: boolean) => void;
   /** go back to idle this many ms after success; 0 keeps the done state */
   resetAfter?: number;
   disabled?: boolean;
@@ -74,6 +76,21 @@ export type SwipeToConfirmProps = {
   icon?: React.ReactNode;
   className?: string;
 };
+
+function extractSwipeErrorMessage(e: unknown, fallback: string): string {
+  if (e instanceof Error && e.message.trim()) return e.message.trim();
+  if (typeof e === "string" && e.trim()) return e.trim();
+  if (
+    typeof e === "object" &&
+    e !== null &&
+    "message" in e &&
+    typeof (e as { message?: unknown }).message === "string" &&
+    (e as { message: string }).message.trim()
+  ) {
+    return (e as { message: string }).message.trim();
+  }
+  return fallback;
+}
 
 export function SwipeToConfirm({
   label = "Slide to confirm",
@@ -83,6 +100,7 @@ export function SwipeToConfirm({
   threshold = 0.85,
   onConfirm,
   onDone,
+  onBusyChange,
   resetAfter = 0,
   disabled = false,
   icon,
@@ -99,6 +117,23 @@ export function SwipeToConfirm({
   const fillRef = React.useRef<HTMLDivElement>(null);
   const labelRef = React.useRef<HTMLDivElement>(null);
   const s = React.useRef({ x: 0, v: 0, max: 0, drag: false, start: 0, base: 0, raf: 0, tick: 0 });
+  const timerRef = React.useRef<number | null>(null);
+  const mountedRef = React.useRef(true);
+
+  React.useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (timerRef.current !== null) {
+        window.clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
+
+  React.useEffect(() => {
+    onBusyChange?.(state === "loading");
+  }, [state, onBusyChange]);
 
   const paint = React.useCallback(() => {
     const { x, max } = s.current;
@@ -161,22 +196,33 @@ export function SwipeToConfirm({
     buzz([10, 40, 10]);
     try {
       await onConfirm?.();
+      if (!mountedRef.current) return;
       setState("done");
       buzz(30);
       onDone?.();
-      if (resetAfter > 0) setTimeout(reset, resetAfter);
+      if (resetAfter > 0) {
+        if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+        timerRef.current = window.setTimeout(() => {
+          timerRef.current = null;
+          if (mountedRef.current) reset();
+        }, resetAfter);
+      }
     } catch (e) {
-      setError(e instanceof Error && e.message ? e.message : errorLabel);
+      if (!mountedRef.current) return;
+      setError(extractSwipeErrorMessage(e, errorLabel));
       setState("error");
       buzz([30, 60, 30]);
-      // shake, then slide home
-      knobRef.current?.parentElement?.animate(
-        [0, -8, 7, -5, 3, 0].map((x) => ({ transform: `translateX(${x}px)` })),
-        { duration: 420, easing: "ease-out" },
-      );
-      setTimeout(() => {
-        animateTo(0, () => setState((x) => (x === "error" ? "idle" : x)));
-      }, 450);
+      // smoothly slide home
+      if (timerRef.current !== null) window.clearTimeout(timerRef.current);
+      timerRef.current = window.setTimeout(() => {
+        timerRef.current = null;
+        if (!mountedRef.current) return;
+        animateTo(0, () => {
+          if (mountedRef.current) {
+            setState((x) => (x === "error" ? "idle" : x));
+          }
+        });
+      }, 320);
     }
   };
 
@@ -285,10 +331,12 @@ export function SwipeToConfirm({
             if (nx < 0) nx *= 0.2;
             st.x = nx;
             paint();
-            const tick = Math.floor((Math.max(0, nx) / st.max) * 5);
-            if (tick !== st.tick) {
-              st.tick = tick;
-              buzz(4);
+            if (st.max > 0) {
+              const tick = Math.floor((Math.max(0, nx) / st.max) * 5);
+              if (tick !== st.tick) {
+                st.tick = tick;
+                buzz(4);
+              }
             }
           }}
           onPointerUp={() => {
@@ -436,11 +484,11 @@ function PanelBody({ p, t, inSheet, onClose }: { p: ConfirmPanelProps; t: Theme;
       {p.amount && (
         <div className="mb-1.5 mt-[26px] text-center">
           <div className="flex items-center justify-center gap-3">
-            <span className="text-[56px] font-bold leading-none tabular-nums tracking-[-0.035em]" style={{ color: t.label }}>
+            <span className="text-[56px] font-bold leading-none tabular-nums tracking-tighter" style={{ color: t.label }}>
               {p.amount.value}
             </span>
             {p.amount.token && (
-              <span className="mt-1 inline-flex h-[34px] items-center gap-1.5 rounded-full pl-[5px] pr-3 text-[17px] font-semibold tracking-[-0.01em]" style={{ background: t.fill, color: t.label }}>
+              <span className="mt-1 inline-flex h-[34px] items-center gap-1.5 rounded-full pl-[5px] pr-3 text-[17px] font-semibold tracking-tight" style={{ background: t.fill, color: t.label }}>
                 {p.amount.token.icon && <span className="grid h-6 w-6 place-items-center">{p.amount.token.icon}</span>}
                 {p.amount.token.symbol}
               </span>
@@ -480,6 +528,16 @@ export function ConfirmPanel(props: ConfirmPanelProps) {
   const asSheet = presentation === "sheet" || (presentation === "auto" && phone);
 
   const close = React.useCallback(() => onOpenChange?.(false), [onOpenChange]);
+  const closeTimerRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (closeTimerRef.current !== null) {
+        window.clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+  }, []);
 
   /* sheet: drag down to dismiss, Escape to close */
   const sheetRef = React.useRef<HTMLDivElement>(null);
@@ -501,7 +559,15 @@ export function ConfirmPanel(props: ConfirmPanelProps) {
       {...swipe}
       onDone={() => {
         swipe?.onDone?.();
-        if (asSheet && closeAfter > 0) setTimeout(close, closeAfter);
+        if (asSheet && closeAfter > 0) {
+          if (closeTimerRef.current !== null) {
+            window.clearTimeout(closeTimerRef.current);
+          }
+          closeTimerRef.current = window.setTimeout(() => {
+            closeTimerRef.current = null;
+            close();
+          }, closeAfter);
+        }
       }}
     />
   );
@@ -549,7 +615,8 @@ export function ConfirmPanel(props: ConfirmPanelProps) {
           d.current.on = false;
           const el = e.currentTarget;
           el.style.transition = `transform .5s ${SHEET}`;
-          const vel = d.current.dy / (performance.now() - d.current.t);
+          const elapsed = Math.max(1, performance.now() - d.current.t);
+          const vel = d.current.dy / elapsed;
           el.style.transform = "";
           if (d.current.dy > 120 || vel > 0.6) close();
         }}
